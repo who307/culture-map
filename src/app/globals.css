@@ -1,26 +1,188 @@
-@import "tailwindcss";
+@import "tailwindcss"; 
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* HTML 태그에 .dark 클래스가 들어갈 때 dark: 수식어가 작동하도록 설정 */
+@custom-variant dark (&:where(.dark, .dark *)); 
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ==========================================================================
+ 1. Theme Color Variables (컬쳐맵 디자인 시스템)
+ ========================================================================== */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ☀️ 라이트 모드 기본값 */
+:root { 
+ --background: #f8fafc; 
+ /* slate-50 */
+ --foreground: #0f172a; 
+ /* slate-900 */
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+ --card-bg: #ffffff; 
+ /* 카드 배경 */
+ --card-border: #f1f5f9; 
+ /* slate-100 */
+
+ --muted-text: #64748b; 
+ /* slate-500 */
+ --sub-bg: #f1f5f9; 
+ /* slate-100 */
+
+ /* 브랜드 시그니처 컬러 */
+ --primary: #4f46e5; 
+ /* indigo-600 */
+ --primary-hover: #4338ca; 
+ /* indigo-700 */
+ --primary-light: #e0e7ff; 
+ /* indigo-100 */
+ --accent: #f43f5e; 
+ /* rose-500 */
+
+ /* 글래스모피즘 */
+ --glass-bg: rgba(255, 255, 255, 0.85); 
+ --glass-border: rgba(241, 245, 249, 0.8); 
+ } 
+
+/* 🌙 다크 모드 (`html.dark` 적용 시) */
+.dark { 
+ --background: #0f172a; 
+ /* slate-900 */
+ --foreground: #f8fafc; 
+ /* slate-50 */
+
+ --card-bg: #1e293b; 
+ /* slate-800 */
+ --card-border: #334155; 
+ /* slate-700 */
+
+ --muted-text: #94a3b8; 
+ /* slate-400 */
+ --sub-bg: #334155; 
+ /* slate-700 */
+
+ /* 다크모드 전용 브랜드 컬러 */
+ --primary: #6366f1; 
+ /* indigo-500 */
+ --primary-hover: #818cf8; 
+ /* indigo-400 */
+ --primary-light: rgba(99, 102, 241, 0.2); 
+ --accent: #fb7185; 
+ /* rose-400 */
+
+ /* 다크모드 글래스모피즘 */
+ --glass-bg: rgba(15, 23, 42, 0.85); 
+ --glass-border: rgba(51, 65, 85, 0.8); 
+ } 
+
+/* ==========================================================================
+ 2. Global Base Styles
+ ========================================================================== */
+
+
+* { 
+ border-color: var(--card-border); 
+ } 
+
+/* 기본 라이트모드 color-scheme 지정 */
+html { 
+ color-scheme: light; 
+ scroll-behavior: smooth; 
+ } 
+
+/* 🌙 html에 .dark 클래스가 붙었을 때 브라우저 기본 UI(달력 팝업 등)도 다크모드로 전환 */
+html.dark { 
+ color-scheme: dark; 
+ } 
+
+body { 
+ background-color: var(--background); 
+ color: var(--foreground); 
+ font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Noto Sans KR', sans-serif; 
+ transition: background-color 0.25s ease, color 0.25s ease; 
+ -webkit-font-smoothing: antialiased; 
+ -moz-osx-font-smoothing: grayscale; 
+ } 
+
+/* ==========================================================================
+ 3. Custom Scrollbar
+ ========================================================================== */
+
+::-webkit-scrollbar { 
+ width: 8px; 
+ height: 8px; 
+ } 
+
+::-webkit-scrollbar-track { 
+ background: transparent; 
+ } 
+
+::-webkit-scrollbar-thumb { 
+ background: #cbd5e1; 
+ border-radius: 9999px; 
+ } 
+
+.dark ::-webkit-scrollbar-thumb { 
+ background: #475569; 
+ } 
+
+::-webkit-scrollbar-thumb:hover { 
+ background: #94a3b8; 
+ } 
+
+.dark ::-webkit-scrollbar-thumb:hover { 
+ background: #64748b; 
+ } 
+
+/* ==========================================================================
+ 4. Selection & Utility Helpers
+ ========================================================================== */
+
+::selection { 
+ background-color: #6366f1; 
+ color: #ffffff; 
+ } 
+
+/* 스크롤바 숨기기 클래스 */
+.no-scrollbar::-webkit-scrollbar { 
+ display: none; 
+ } 
+
+.no-scrollbar { 
+ -ms-overflow-style: none; 
+ scrollbar-width: none; 
+ } 
+
+/* 글래스 패널 유틸리티 */
+.glass-panel { 
+ background-color: var(--glass-bg); 
+ backdrop-filter: blur(12px); 
+ -webkit-backdrop-filter: blur(12px); 
+ border-color: var(--glass-border); 
+ } 
+
+/* ==========================================================================
+ 5. Input Date Calendar Icon Customization (새로 추가된 영역)
+ ========================================================================== */
+
+/* 다크모드일 때 date input의 color-scheme 보장 */
+.dark input[type="date"] { 
+ color-scheme: dark; 
+ } 
+
+/* input date 달력 피커 아이콘 스타일 커스텀 */
+input[type="date"]::-webkit-calendar-picker-indicator { 
+ cursor: pointer; 
+ border-radius: 4px; 
+ padding: 2px; 
+
+ /* 아이콘 색상을 브랜드 인디고 컬러(--primary)로 지정 */
+ background-color: var(--primary); 
+
+ /* SVG 마스크를 이용해 깨끗한 벡터 아이콘 형태 유지 */
+ -webkit-mask-image: url('data:image/svg+xml; utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'); 
+ mask-image: url('data:image/svg+xml; utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'); 
+ -webkit-mask-repeat: no-repeat; 
+ mask-repeat: no-repeat; 
+ -webkit-mask-position: center; 
+ mask-position: center; 
+ -webkit-mask-size: contain; 
+ mask-size: contain; 
+
+ transition: opacity 0.2s ease, transform 0.1s ease; 
+ } 

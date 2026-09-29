@@ -1,69 +1,82 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+import { useQuery } from "@tanstack/react-query";
+import { useCultureStore } from "@/store/useCultureStore";
+import { fetchHomeCultures } from "@/api/contentsApi"; // API 연동 함수
+import Header from "@/components/common/Header";
+import CultureCard from "@/components/culture/CultureCard";
+import SkeletonCard from "@/components/common/SkeletonCard";
+
+const CATEGORIES = [
+    { key: "movie", title: "🎬 박스오피스 영화", href: "/movies" },
+    { key: "concert", title: "🎤 인기 콘서트", href: "/concerts" },
+    { key: "musical", title: "🎭 대표 뮤지컬", href: "/musicals" },
+    { key: "festival", title: "🎪 지역 축제 및 행사", href: "/festivals" },
+    { key: "exhibition", title: "🖼️ 전시회 및 미술관", href: "/exhibitions" },
+];
+
+export default function HomePage() {
+    const { selectedDate } = useCultureStore();
+
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ["homeCultures", selectedDate],
+        queryFn: () => fetchHomeCultures(selectedDate),
+        staleTime: 1000 * 60 * 5, // 5분 캐싱
+    });
+
+    return (
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-900 transition-colors duration-200">
+            <Header />
+
+            <main className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+                {/* 히어로 배너 */}
+                <section className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-800 text-white shadow-lg">
+                    <span className="text-xs font-bold tracking-widest text-indigo-200 dark:text-indigo-300 uppercase">Culture Map Today</span>
+                    <h1 className="text-2xl md:text-3xl font-extrabold mt-1">{selectedDate} 추천 문화생활 🎯</h1>
+                    <p className="text-sm text-indigo-100 dark:text-indigo-200 mt-2">영화부터 전시회까지, 오늘 즐길 수 있는 특별한 일정을 탐색해보세요.</p>
+                </section>
+
+                {/* 에러 화면 */}
+                {isError && (
+                    <div className="p-8 text-center bg-white dark:bg-slate-800 rounded-2xl border border-rose-100 dark:border-rose-900/40 shadow-sm transition-colors">
+                        <p className="text-rose-500 dark:text-rose-400 font-semibold text-sm">문화 행사 정보를 불러오지 못했습니다.</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-3 px-4 py-1.5 text-xs font-bold bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg transition-colors">
+                            다시 시도
+                        </button>
+                    </div>
+                )}
+
+                {/* 카테고리별 섹션 */}
+                {CATEGORIES.map((category) => {
+                    // 객체 구조 데이터에서 해당 카테고리 배열 추출
+                    const categoryItems = data?.[category.key] || [];
+
+                    return (
+                        <section key={category.key} className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 transition-colors">{category.title}</h2>
+                                <a href={category.href} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
+                                    전체보기 &rarr;
+                                </a>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {isLoading ? (
+                                    Array.from({ length: 5 }).map((_, idx) => <SkeletonCard key={idx} />)
+                                ) : categoryItems.length > 0 ? (
+                                    categoryItems.map((item) => <CultureCard key={item.id} item={item} />)
+                                ) : (
+                                    <div className="col-span-full py-8 text-center text-xs text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                                        등록된 일정이 없습니다.
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    );
+                })}
+            </main>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    );
 }
