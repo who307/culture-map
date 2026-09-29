@@ -1,23 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useCultureStore } from "@/store/useCultureStore";
+import { useFilterStore } from "@/store/useFilterStore";
+import Navbar, { NAV_ITEMS } from "@/components/common/Navbar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
-    { label: "통합 홈", href: "/" },
-    { label: "영화", href: "/movies" },
-    { label: "콘서트", href: "/concerts" },
-    { label: "뮤지컬", href: "/musicals" },
-    { label: "지역 행사", href: "/festivals" },
-    { label: "전시회", href: "/exhibitions" },
-];
-
 export default function Header() {
     const pathname = usePathname();
-    const { selectedDate, setSelectedDate } = useCultureStore();
-    const [isDark, setIsDark] = useState(false);
+    const { selectedDate, setSelectedDate } = useFilterStore();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // 마운트 시 저장된 테마 또는 시스템 설정 불러오기
@@ -25,26 +16,14 @@ export default function Header() {
         const savedTheme = localStorage.getItem("theme");
         const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-        if (savedTheme === "dark" || (!savedTheme && systemDark)) {
-            setIsDark(true);
-            document.documentElement.classList.add("dark");
-        } else {
-            setIsDark(false);
-            document.documentElement.classList.remove("dark");
-        }
+        document.documentElement.classList.toggle("dark", savedTheme === "dark" || (!savedTheme && systemDark));
     }, []);
 
     // 다크모드 토글 함수
     const toggleDarkMode = () => {
-        const nextState = !isDark;
-        setIsDark(nextState);
-        if (nextState) {
-            document.documentElement.classList.add("dark");
-            localStorage.setItem("theme", "dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-            localStorage.setItem("theme", "light");
-        }
+        const nextState = !document.documentElement.classList.contains("dark");
+        document.documentElement.classList.toggle("dark", nextState);
+        localStorage.setItem("theme", nextState ? "dark" : "light");
     };
 
     return (
@@ -96,23 +75,7 @@ export default function Header() {
                 </Link>
 
                 {/* GNV 영역 */}
-                <nav className="hidden lg:flex items-center gap-1 font-medium">
-                    {NAV_ITEMS.map((item) => {
-                        const isActive = pathname === item.href;
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                                    isActive
-                                        ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold"
-                                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-                                }`}>
-                                {item.label}
-                            </Link>
-                        );
-                    })}
-                </nav>
+                <Navbar />
 
                 {/* 우측 유틸리티 영역 (날짜 피커, 다크모드 버튼, 지도 탐색) */}
                 <div className="flex items-center gap-2.5">
@@ -130,22 +93,12 @@ export default function Header() {
                         onClick={toggleDarkMode}
                         aria-label="다크모드 토글"
                         className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90 cursor-pointer">
-                        {isDark ? (
-                            /* 해 아이콘 (다크모드일 때 표시) */
-                            <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                                />
-                            </svg>
-                        ) : (
-                            /* 달 아이콘 (라이트모드일 때 표시) */
-                            <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
-                        )}
+                        <svg className="h-4 w-4 text-slate-600 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg className="hidden h-4 w-4 text-amber-400 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
                     </button>
 
                     {/* 지도 탐색 링크 */}
@@ -166,11 +119,11 @@ export default function Header() {
                         className="relative z-50 p-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors cursor-pointer">
                         <div className="w-5 h-4 relative flex flex-col justify-between items-center">
                             {/* 상단 선 */}
-                            <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center ${mobileMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
+                            <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center ${mobileMenuOpen ? "rotate-45 translate-y-1.75" : ""}`} />
                             {/* 중단 선 */}
                             <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-200 ease-in-out ${mobileMenuOpen ? "opacity-0 scale-x-0" : "opacity-100"}`} />
                             {/* 하단 선 */}
-                            <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
+                            <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-1.75" : ""}`} />
                         </div>
                     </button>
 

@@ -1,9 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useCultureStore } from "@/store/useCultureStore";
-import { fetchHomeCultures } from "@/api/contentsApi"; // API 연동 함수
-import Header from "@/components/common/Header";
+import { useFilterStore } from "@/store/useFilterStore";
+import { useCultureData } from "@/hooks/useCultureData";
 import CultureCard from "@/components/culture/CultureCard";
 import SkeletonCard from "@/components/common/SkeletonCard";
 
@@ -16,18 +14,11 @@ const CATEGORIES = [
 ];
 
 export default function HomePage() {
-    const { selectedDate } = useCultureStore();
-
-    const { data, isLoading, isError } = useQuery({
-        queryKey: ["homeCultures", selectedDate],
-        queryFn: () => fetchHomeCultures(selectedDate),
-        staleTime: 1000 * 60 * 5, // 5분 캐싱
-    });
+    const { selectedDate } = useFilterStore();
+    const { data, isLoading, isError } = useCultureData("home");
 
     return (
         <div className="min-h-screen bg-slate-50/50 dark:bg-slate-900 transition-colors duration-200">
-            <Header />
-
             <main className="max-w-7xl mx-auto px-4 py-8 space-y-10">
                 {/* 히어로 배너 */}
                 <section className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-800 text-white shadow-lg">

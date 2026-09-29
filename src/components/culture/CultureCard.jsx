@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useCultureStore } from '@/store/useCultureStore';
+import { useBookmarkStore } from '@/store/useBookmarkStore';
+import { formatDateRange, formatPrice } from '@/utils/formatters';
 
 // 카테고리별 라벨 및 색상
 const CATEGORY_MAP = {
@@ -14,7 +15,7 @@ const CATEGORY_MAP = {
 };
 
 export default function CultureCard({ item, onClick }) {
-  const { bookmarks, toggleBookmark } = useCultureStore();
+  const { bookmarks, toggleBookmark } = useBookmarkStore();
   const isBookmarked = bookmarks.includes(item.id);
   const category = CATEGORY_MAP[item.type] || CATEGORY_MAP.movie;
 
@@ -68,7 +69,7 @@ export default function CultureCard({ item, onClick }) {
 
         {/* 예매율/순위 오버레이 (영화/공연 전용) */}
         {item.reservationRate && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 pt-6 text-white text-xs font-semibold">
+          <div className="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/80 to-transparent p-2.5 pt-6 text-white text-xs font-semibold">
             예매율 {item.reservationRate}%
           </div>
         )}
@@ -87,10 +88,10 @@ export default function CultureCard({ item, onClick }) {
 
         <div className="mt-3 pt-2.5 border-t border-slate-50 flex items-center justify-between text-[11px]">
           <span className="text-slate-400 font-medium">
-            {item.startDate} ~ {item.endDate}
+            {formatDateRange(item.startDate, item.endDate)}
           </span>
           <span className="font-bold text-indigo-600">
-            {item.price || '정보 없음'}
+            {formatPrice(item.price)}
           </span>
         </div>
       </div>
