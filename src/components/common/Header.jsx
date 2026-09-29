@@ -104,9 +104,9 @@ export default function Header() {
                     {/* 지도 탐색 링크 */}
                     <Link
                         href="/map"
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-sm transition-all active:scale-95">
+                        className="flex items-center gap-1.5 px-1.5 py-1 sm:px-3.5 sm:py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-sm transition-all active:scale-95">
                         <div>
-                            🗺️ 지도 <span className="hidden sm:inline-block">탐색</span>
+                            <span className="hidden sm:inline-block">🗺️</span> 지도 <span className="hidden sm:inline-block">탐색</span>
                         </div>
                     </Link>
                 </div>
