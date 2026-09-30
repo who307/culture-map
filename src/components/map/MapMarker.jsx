@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useFilterStore } from "@/store/useFilterStore";
 
 export const MARKER_STYLES = {
-  movie: { color: "#D64045", icon: "🎬", label: "영화" },
   concert: { color: "#2864C5", icon: "🎤", label: "콘서트" },
   musical: { color: "#8753C4", icon: "🎭", label: "뮤지컬" },
   festival: { color: "#D9842B", icon: "🎪", label: "행사" },
@@ -32,6 +31,10 @@ export default function MapMarker({ map, item }) {
     const latitude = Number(item.latitude);
     const longitude = Number(item.longitude);
     if (!maps || !map || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined;
+
+    map.setOptions({
+      zoomControl: false,
+    });
 
     const position = new maps.LatLng(latitude, longitude);
     const marker = new maps.Marker({
