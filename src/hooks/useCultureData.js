@@ -5,21 +5,23 @@ import { fetchAllCultures, fetchCategoryCultures, fetchHomeCultures } from "@/ut
 import { useFilterStore } from "@/store/useFilterStore";
 
 export function useCultureData(category, options = {}) {
-  const { limit, sort, order } = options;
-  const selectedDate = useFilterStore((state) => state.selectedDate);
+  const { limit, sort, order, boxOfficeType = "daily" } = options;
+  const startDate = useFilterStore((state) => state.startDate);
+  const endDate = useFilterStore((state) => state.endDate);
   const selectedRegion = useFilterStore((state) => state.selectedRegion);
 
   return useQuery({
-    queryKey: ["cultures", category, selectedDate, selectedRegion, limit, sort, order],
+    queryKey: ["cultures", category, startDate, endDate, selectedRegion, limit, sort, order, boxOfficeType],
     queryFn: async () => {
-      if (category === "home") return fetchHomeCultures(selectedDate);
+      if (category === "home") return fetchHomeCultures(startDate, endDate);
 
-      const requestOptions = { date: selectedDate, limit, sort, order };
+      const requestOptions = { startDate, endDate, limit, sort, order, boxOfficeType };
       const data = category === "all"
         ? await fetchAllCultures(requestOptions)
         : await fetchCategoryCultures(category, requestOptions);
 
       if (selectedRegion === "ALL") return data;
+      if (category === "movie") return data;
       return data.filter((item) => item.address?.includes(selectedRegion));
     },
   });

@@ -5,5 +5,13 @@ export function getTodayDate() {
 }
 
 export function isEventOnDate(item, date) {
-  return item.startDate <= date && item.endDate >= date;
+  return isEventInDateRange(item, date, date);
+}
+
+export function isEventInDateRange(item, startDate, endDate) {
+  const eventStartDate = item.startDate ?? item.endDate;
+  const eventEndDate = item.endDate ?? item.startDate;
+  return Boolean(eventStartDate && eventEndDate)
+    && eventStartDate <= endDate
+    && eventEndDate >= startDate;
 }

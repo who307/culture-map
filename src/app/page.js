@@ -14,7 +14,7 @@ const CATEGORIES = [
 ];
 
 export default function HomePage() {
-    const { selectedDate } = useFilterStore();
+    const { startDate, endDate } = useFilterStore();
     const { data, isLoading, isError } = useCultureData("home");
 
     return (
@@ -23,8 +23,8 @@ export default function HomePage() {
                 {/* 히어로 배너 */}
                 <section className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-800 text-white shadow-lg">
                     <span className="text-xs font-bold tracking-widest text-indigo-200 dark:text-indigo-300 uppercase">Culture Map Today</span>
-                    <h1 className="text-2xl md:text-3xl font-extrabold mt-1">{selectedDate} 추천 문화생활 🎯</h1>
-                    <p className="text-sm text-indigo-100 dark:text-indigo-200 mt-2">영화부터 전시회까지, 오늘 즐길 수 있는 특별한 일정을 탐색해보세요.</p>
+                    <h1 className="text-2xl md:text-3xl font-extrabold mt-1">{startDate} ~ {endDate} 추천 문화생활 🎯</h1>
+                    <p className="text-sm text-indigo-100 dark:text-indigo-200 mt-2">선택한 기간에 즐길 수 있는 문화 일정을 탐색해보세요.</p>
                 </section>
 
                 {/* 에러 화면 */}
