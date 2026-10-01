@@ -43,7 +43,6 @@ export default function HomePage() {
                 {CATEGORIES.map((category) => {
                     // 객체 구조 데이터에서 해당 카테고리 배열 추출
                     const categoryItems = data?.[category.key] || [];
-
                     return (
                         <section key={category.key} className="space-y-4">
                             <div className="flex items-center justify-between">

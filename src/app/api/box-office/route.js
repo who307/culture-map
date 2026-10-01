@@ -46,7 +46,7 @@ function normalizeMovie(movie, type, showRange) {
 }
 
 export async function GET(request) {
-  const apiKey = process.env.KOBIS_API_KEY ?? process.env.NEXT_PUBLIC_KOBIS_KEY;
+  const apiKey = process.env.KOBIS_API_KEY ?? process.env.KOBIS_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "KOBIS_API_KEY 환경변수를 설정해주세요." },
