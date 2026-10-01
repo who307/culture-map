@@ -2,6 +2,7 @@ import '@/app/globals.css';
 import Script from 'next/script';
 import ReactQueryProvider from '@/components/common/ReactQueryProvider';
 import Header from '@/components/common/Header';
+import DateRangeDock from '@/components/common/DateRangeDock';
 
 export const metadata = {
   title: '컬쳐맵 - 통합 문화생활 정보 서비스',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className="antialiased font-sans text-slate-800 bg-slate-50">
         <Header />
+        <DateRangeDock />
         <ReactQueryProvider>{children}</ReactQueryProvider>
 
         {/* 네이버 지도 SDK 스크립트 비동기 로드 */}

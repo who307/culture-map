@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import { useBookmarkStore } from '@/store/useBookmarkStore';
 import { formatDateRange, formatPrice } from '@/utils/formatters';
 
@@ -19,8 +20,11 @@ const MOVIE_COVER_ACCENTS = ['#e76f51', '#2a9d8f', '#e9c46a', '#6d9dc5', '#b57ab
 export default function CultureCard({ item, onClick }) {
   const { bookmarks, toggleBookmark } = useBookmarkStore();
   const isBookmarked = bookmarks.includes(item.id);
-  const category = CATEGORY_MAP[item.type] || CATEGORY_MAP.movie;
+  const category = CATEGORY_MAP[item.type]
   const posterUrl = item.posterUrl || item.imageUrl;
+  const [failedPosterUrl, setFailedPosterUrl] = useState(null);
+  const showPoster = Boolean(posterUrl) && failedPosterUrl !== posterUrl;
+  const hasPrice = Boolean(item.price) && !['정보 없음', '가격 정보 없음'].includes(item.price);
   const boxOfficeRange = item.showRange
     ?.split('~')
     .map((date) => date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'))
@@ -30,7 +34,7 @@ export default function CultureCard({ item, onClick }) {
 
   const handleBookmarkClick = (e) => {
     e.stopPropagation(); // 카드 상세 클릭 이벤트 전파 방지
-    toggleBookmark(item.id);
+    toggleBookmark(item);
   };
 
   return (
@@ -40,7 +44,7 @@ export default function CultureCard({ item, onClick }) {
     >
       {/* 썸네일 이미지 영역 */}
       <div className="relative aspect-3/4 w-full bg-slate-100 overflow-hidden">
-        {posterUrl ? (
+        {showPoster ? (
           <Image
             src={posterUrl}
             alt={`${item.title} 포스터`}
@@ -48,8 +52,9 @@ export default function CultureCard({ item, onClick }) {
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             unoptimized={Boolean(item.movieCd)}
+            onError={() => setFailedPosterUrl(posterUrl)}
           />
-        ) : item.movieCd ? (
+        ) : !posterUrl && item.movieCd ? (
           <div className="relative flex h-full flex-col justify-between overflow-hidden bg-[#142126] p-5 pt-14 text-white">
             <span
               aria-hidden="true"
@@ -92,14 +97,12 @@ export default function CultureCard({ item, onClick }) {
           </div>
         ) : (
             <Image
-              src="/images/placeholders/no-poster.png"
+              src="/images/placeholders/no-image.svg"
             alt={item.title}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              e.target.src = '/images/placeholders/no-poster.png';
-            }}
+            unoptimized
           />
         )}
 
@@ -165,9 +168,36 @@ export default function CultureCard({ item, onClick }) {
               📍 {item.locationName}
             </p>
           )}
+          {(item.reservationUrl || item.detailUrl) && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              {item.reservationSite && <span className="truncate text-slate-500">{item.reservationSite}</span>}
+              {item.reservationUrl && (
+                <a
+                  href={item.reservationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                  className="font-semibold text-indigo-600 hover:underline"
+                >
+                  예매하기 ↗
+                </a>
+              )}
+              {item.detailUrl && item.detailUrl !== item.reservationUrl && (
+                <a
+                  href={item.detailUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                  className="font-semibold text-slate-600 hover:underline"
+                >
+                  {item.detailLinkLabel || '상세정보'} ↗
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="mt-3 pt-2.5 border-t border-slate-50 flex items-center justify-between text-[11px]">
+        <div className={`mt-3 pt-2.5 border-t border-slate-50 flex items-center ${hasPrice ? 'justify-between' : 'justify-start'} text-[11px]`}>
           {item.movieCd ? (
             <div className="grid w-full gap-1 text-[11px]">
               <span className="text-slate-400 font-medium">개봉 {item.openDate || '정보 없음'}</span>
@@ -183,9 +213,7 @@ export default function CultureCard({ item, onClick }) {
               <span className="text-slate-400 font-medium">
                 {formatDateRange(item.startDate, item.endDate)}
               </span>
-              <span className="font-bold text-indigo-600">
-                {formatPrice(item.price)}
-              </span>
+              {hasPrice && <span className="font-bold text-indigo-600">{formatPrice(item.price)}</span>}
             </>
           )}
         </div>

@@ -9,7 +9,7 @@ export function formatPrice(price) {
 
 export function formatCategory(category) {
   const labels = {
-    concert: "콘서트",
+    concert: "콘서트(대중음악)",
     exhibition: "전시회",
     festival: "지역 행사",
     movie: "영화",

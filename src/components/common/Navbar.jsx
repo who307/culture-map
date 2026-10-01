@@ -10,6 +10,7 @@ export const NAV_ITEMS = [
   { label: "뮤지컬", icon: "🎭", href: "/musicals" },
   { label: "지역 행사", icon: "🎪", href: "/festivals" },
   { label: "전시회", icon: "🖼️", href: "/exhibitions" },
+  { label: "위시리스트", icon: "❤️", href: "/bookmarks" },
 ];
 
 export default function Navbar() {
@@ -26,7 +27,7 @@ export default function Navbar() {
             aria-current={isActive ? "page" : undefined}
             aria-label={item.label}
             title={item.label}
-            className={`inline-flex min-h-10 min-w-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2 py-2 text-sm transition-colors xl:px-3 ${
+            className={`inline-flex min-h-10 min-w-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 xl:px-3 ${
               isActive
                 ? "bg-indigo-50 font-bold text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"

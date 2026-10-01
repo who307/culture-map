@@ -6,7 +6,12 @@ export default function SortSelect({ value, onChange, category }) {
         { value: "salesAmount", label: "매출액순" },
         { value: "title", label: "이름순" },
       ]
-    : [
+    : category === "concert" || category === "musical"
+      ? [
+          { value: "startDate", label: "시작일순" },
+          { value: "title", label: "이름순" },
+        ]
+      : [
         { value: "popularityRank", label: "인기순" },
         { value: "startDate", label: "시작일순" },
         { value: "title", label: "이름순" },

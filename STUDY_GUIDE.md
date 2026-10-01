@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | Props | `category`, `items`, `item`, `onClose` | `CultureCategoryPage`, `NaverMapContainer`, `CultureCard`, `DetailPanel` | 부모가 자식에게 전달하는 입력값. 전달받은 자식이 직접 원본을 바꾸지 않습니다. |
 | 컴포넌트 state | 정렬값, 박스오피스 모드, 페이지, 모바일 메뉴 열림 여부, 지도 카테고리 선택 | `CultureCategoryPage`, `Header`, `NaverMapContainer`, `useNaverMap` | 해당 컴포넌트 또는 훅이 소유하는 UI 상태입니다. `useState`로 갱신하면 관련 UI가 다시 렌더링됩니다. |
-| 공유 클라이언트 state | 시작일·종료일·지역·선택 마커, 북마크 ID | `useFilterStore`, `useBookmarkStore` | 서로 떨어진 컴포넌트가 함께 읽고 변경하는 상태입니다. Zustand가 관리합니다. |
+| 공유 클라이언트 state | 시작일·종료일·지역·선택 마커, 위시리스트 ID | `useFilterStore`, `useBookmarkStore` | 서로 떨어진 컴포넌트가 함께 읽고 변경하는 상태입니다. Zustand가 관리합니다. |
 | 서버 state | 문화 행사 API 응답, 로딩·에러·캐시 | `useCultureData` | 서버에서 가져와 캐싱하고 다시 요청해야 하는 데이터입니다. TanStack Query가 관리합니다. |
 
 **구분하는 질문:** 이 값이 컴포넌트 하나에서만 쓰이는가? 여러 화면이 공유하는가? 서버에서 다시 받아야 하는가? 값의 소유자와 수명을 먼저 정하면 도구 선택이 쉬워집니다.
@@ -86,9 +86,9 @@ MapMarker 클릭
 
 필터 store에는 `persist` 미들웨어가 없습니다. 따라서 이 상태들은 브라우저 새로고침 후 저장된 값으로 복구되지 않습니다. 특히 날짜는 URL에도 동기화되지 않습니다.
 
-### 북마크와 LocalStorage
+### 위시리스트와 LocalStorage
 
-`src/store/useBookmarkStore.js`는 북마크 ID 배열을 관리하고 Zustand의 `persist` 미들웨어로 저장합니다.
+`src/store/useBookmarkStore.js`는 위시리스트 ID 배열을 관리하고 Zustand의 `persist` 미들웨어로 저장합니다.
 
 ```js
 toggleBookmark: (id) =>
@@ -99,7 +99,7 @@ toggleBookmark: (id) =>
   }))
 ```
 
-현재 포함되어 있으면 해당 ID를 제외한 새 배열을 만들고, 없으면 기존 배열에 추가합니다. `partialize`는 저장 대상이 `bookmarks`뿐이라고 지정하고, `name`은 LocalStorage 키(`culture-map-storage`)가 됩니다. 따라서 북마크는 새로고침 후에도 유지됩니다.
+현재 포함되어 있으면 해당 ID를 제외한 새 배열을 만들고, 없으면 기존 배열에 추가합니다. `partialize`는 저장 대상이 `bookmarks`뿐이라고 지정하고, `name`은 LocalStorage 키(`culture-map-storage`)가 됩니다. 따라서 위시리스트는 새로고침 후에도 유지됩니다.
 
 Zustand store도 결국 React 컴포넌트에서 구독해 사용합니다. 필요한 값만 selector로 선택하면 관련 없는 store 값 변경에 대한 렌더링을 줄이고, 어떤 상태에 의존하는지도 명확해집니다.
 
@@ -138,7 +138,7 @@ Provider는 `src/components/common/ReactQueryProvider.jsx`에 있고, `src/app/l
 4. `src/utils/api.js`에서 JSON Server와 KOBIS 요청, 일정 겹침 필터, 정렬을 확인합니다.
 5. `/api/box-office` 서버 라우트에서 KOBIS 응답을 화면용 데이터로 정규화하는 과정을 확인합니다.
 6. 결과가 현재 페이지 10개로 잘린 뒤 `CultureList`와 `CultureCard` props로 내려가는 것을 추적합니다.
-7. 북마크 버튼 클릭이 `toggleBookmark`를 통해 어떻게 공유 상태와 LocalStorage를 바꾸는지 확인합니다.
+7. 위시리스트 버튼 클릭이 `toggleBookmark`를 통해 어떻게 공유 상태와 LocalStorage를 바꾸는지 확인합니다.
 
 지도 화면은 `src/app/map/page.jsx`에서 시작해 `useCultureData("all")`, `NaverMapContainer`, `MapMarker`, `DetailPanel` 순으로 읽으면 됩니다. SDK 객체와 지도 생성 과정은 `src/hooks/useNaverMap.js`에서 확인할 수 있습니다.
 
@@ -146,13 +146,15 @@ Provider는 `src/components/common/ReactQueryProvider.jsx`에 있고, `src/app/l
 
 - **날짜 범위:** `useFilterStore`는 오늘을 시작일·종료일로 저장합니다. 헤더의 두 날짜 입력이 범위를 갱신하고, query key에 반영됩니다. 비영화 일정은 선택 구간과 겹치는 일정을 반환하며 영화는 종료일 기준으로 조회합니다.
 - **카테고리 페이지네이션:** `CultureCategoryPage`가 필터링·정렬된 결과를 10개씩 나눠 보여줍니다. 날짜 범위·정렬·박스오피스 모드가 바뀌면 1페이지로 돌아옵니다. KOBIS 박스오피스는 최대 10개라 보통 한 페이지입니다.
-- **더미 데이터:** `db.json`에는 각 카테고리별 50개 데이터가 있습니다. 영화 페이지는 JSON Server의 영화 배열 대신 KOBIS 실데이터를 사용합니다.
+- **데이터 공급원:** `db.json`의 문화 배열은 화면에서 사용하지 않습니다. 영화는 KOBIS, 콘서트·뮤지컬은 KOPIS, 지역 행사는 한국관광콘텐츠랩, 전시는 문화포털 데이터를 사용합니다.
 - **KOBIS 박스오피스:** `/api/box-office`가 일일 또는 주말 데이터를 조회합니다. 오늘 일일 데이터가 없으면 전일 데이터를 반환할 수 있습니다. `salesAmt`는 해당 기간 매출, `salesAcc`는 누적 매출입니다.
+- **KOPIS 공연목록:** `/api/kopis`가 콘서트·뮤지컬 공연목록을 XML로 조회한 뒤 화면용 공통 데이터로 변환합니다. API 키는 서버의 `KOPIS_API_KEY` 환경변수로만 전달합니다. KOPIS 목록에는 인기순위와 공연장 좌표가 없어 시작일·이름순만 제공하며, 지도 좌표는 별도 공연장 상세 연동이 필요합니다.
+- **행사·전시 API:** `/api/tour-events`는 한국관광콘텐츠랩 JSON 응답을, `/api/culture-exhibitions`는 문화포털 응답을 공통 문화 데이터로 변환합니다. 키는 각각 서버 환경변수 `KTO_TOUR_API_KEY`, `CULTURE_PORTAL_API_KEY`로 설정합니다.
 - **극장 마스터:** `/api/movie-theaters`와 `fetchMovieTheaters()`는 행정안전부 영화상영관 인허가 정보를 조회합니다. 극장 마스터에는 영화별 상영 시간표가 없으므로 실제 상영 여부를 연결하지 않습니다.
 - **포스터:** KOBIS 박스오피스 응답은 포스터 주소를 제공하지 않습니다. `CultureCard`는 `posterUrl` 또는 `imageUrl`을 사용할 수 있고, 둘 다 없으면 순위·제목 커버를 표시합니다.
 - **지역 필터:** 지도 화면의 지역 선택값은 `selectedRegion`으로 Zustand에 저장됩니다. `useCultureData`가 데이터를 받은 뒤 각 항목의 `address`에 선택 지역이 포함되는지 확인해 필터링합니다.
 - **지도 상세 선택:** 마커를 클릭하면 선택한 문화 항목이 `selectedMapItem`에 저장됩니다. 지도 컨테이너는 이 값을 구독하고 `DetailPanel`에 전달하며, 닫기 버튼은 선택값을 `null`로 초기화합니다.
-- **북마크 저장:** `useBookmarkStore`는 문화 항목 ID를 추가·삭제하고, Zustand `persist` 미들웨어를 통해 `culture-map-storage`라는 LocalStorage 키에 북마크 배열을 저장합니다.
+- **위시리스트 저장:** `useBookmarkStore`는 문화 항목 ID를 추가·삭제하고, Zustand `persist` 미들웨어를 통해 `culture-map-storage`라는 LocalStorage 키에 위시리스트 배열을 저장합니다.
 - **API 데이터와 캐시:** `useCultureData`가 TanStack Query를 사용해 요청·캐시·로딩·오류 상태를 제공합니다. QueryClient는 데이터를 60초 동안 fresh로 취급하고 창 포커스 시 자동 재요청하지 않도록 설정되어 있습니다.
 - **데이터 가공:** `src/utils/api.js`가 카테고리별 API 요청, 날짜 필터링, 정렬, 개수 제한을 담당합니다. 지역 필터는 요청 후 `useCultureData`에서 적용합니다. 홈 화면은 `Promise.allSettled`를 사용해 일부 카테고리 요청이 실패해도 성공한 결과를 표시합니다.
 
@@ -164,18 +166,19 @@ Provider는 `src/components/common/ReactQueryProvider.jsx`에 있고, `src/app/l
 - 일정 기간 겹침을 `item.startDate <= endDate && item.endDate >= startDate`로 판정하는 이유는 무엇일까요?
 - KOBIS의 `salesAmt`와 `salesAcc`는 각각 어떤 매출을 뜻할까요?
 - KOBIS가 최대 10개 영화를 반환하면 10개 단위 페이지네이션은 어떻게 보일까요?
-- 북마크 store에서 `partialize`를 제거하면 LocalStorage에 무엇이 더 저장될까요?
+- 위시리스트 store에서 `partialize`를 제거하면 LocalStorage에 무엇이 더 저장될까요?
 - 지도 상태를 전역 store 대신 `NaverMapContainer`의 로컬 state로 옮기면 어떤 컴포넌트 경계가 영향을 받을까요?
 - `Header`에서 store 전체를 구독하는 것과 날짜만 selector로 구독하는 것의 렌더링 차이는 무엇일까요?
 
 ## 관련 파일
 
 - [상태 store](src/store/useFilterStore.js)
-- [북마크 store](src/store/useBookmarkStore.js)
+- [위시리스트 store](src/store/useBookmarkStore.js)
 - [문화 데이터 훅](src/hooks/useCultureData.js)
 - [지도 SDK 훅](src/hooks/useNaverMap.js)
 - [API 유틸리티](src/utils/api.js)
 - [박스오피스 API 라우트](src/app/api/box-office/route.js)
+- [KOPIS 공연 API 라우트](src/app/api/kopis/route.js)
 - [영화관 마스터 API 라우트](src/app/api/movie-theaters/route.js)
 - [카테고리 목록·페이지네이션](src/components/culture/CultureCategoryPage.jsx)
 - [React Query Provider](src/components/common/ReactQueryProvider.jsx)

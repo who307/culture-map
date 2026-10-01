@@ -1,8 +1,8 @@
 "use client";
 
-import Button from "@/components/common/Button";
 import NaverMapContainer from "@/components/map/NaverMapContainer";
-import { useCultureData } from "@/hooks/useCultureData";
+import Link from "next/link";
+import { useBookmarkStore } from "@/store/useBookmarkStore";
 import { useFilterStore } from "@/store/useFilterStore";
 
 const REGIONS = ["ALL", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "제주"];
@@ -10,7 +10,13 @@ const REGIONS = ["ALL", "서울", "경기", "인천", "부산", "대구", "대�
 export default function MapPage() {
   const selectedRegion = useFilterStore((state) => state.selectedRegion);
   const setSelectedRegion = useFilterStore((state) => state.setSelectedRegion);
-  const { data = [], isLoading, isError, refetch } = useCultureData("all");
+  const bookmarks = useBookmarkStore((state) => state.bookmarks);
+  const bookmarkItems = useBookmarkStore((state) => state.bookmarkItems);
+  const savedItems = bookmarks.map((id) => bookmarkItems[id]).filter(Boolean);
+  const mapItems = savedItems.filter((item) => item.type !== "movie")
+    .filter((item) => selectedRegion === "ALL"
+      || item.address?.includes(selectedRegion)
+      || item.locationName?.includes(selectedRegion));
 
   return (
     <>
@@ -31,17 +37,13 @@ export default function MapPage() {
             </select>
           </label>
         </div>
-        {isError ? (
-          <div className="rounded-lg border border-rose-200 bg-white p-8 text-center dark:border-rose-900 dark:bg-slate-900">
-            <p className="text-sm text-rose-600 dark:text-rose-400">문화 행사 정보를 불러오지 못했습니다.</p>
-            <Button type="button" className="mt-4" onClick={() => refetch()}>다시 시도</Button>
+        {mapItems.length === 0 && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+            <p>{savedItems.length === 0 ? "위시리스트에 담은 문화 일정이 없습니다." : "선택한 지역에 표시할 비영화 일정이 없습니다."}</p>
+            <Link href="/bookmarks" className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400">위시리스트 보기</Link>
           </div>
-        ) : (
-          <>
-            {isLoading && <p className="mb-3 text-sm text-slate-500">지도 데이터를 불러오는 중입니다.</p>}
-            <NaverMapContainer items={data} />
-          </>
         )}
+        <NaverMapContainer items={mapItems} />
       </main>
     </>
   );

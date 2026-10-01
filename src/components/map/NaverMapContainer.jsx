@@ -1,18 +1,36 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import DetailPanel from '@/components/map/DetailPanel';
 import MapMarker, { MARKER_STYLES } from '@/components/map/MapMarker';
 import { useNaverMap } from '@/hooks/useNaverMap';
 import { useFilterStore } from '@/store/useFilterStore';
 
+function getGeocodeQueries(item) {
+  const address = String(item.address ?? '').trim();
+  const locationName = String(item.locationName ?? '').trim();
+  const baseName = locationName.replace(/\s*\([^()]*\)\s*$/, '').trim();
+  const aliases = [...locationName.matchAll(/\(([^()]+)\)/g)].map(([, alias]) => alias.trim());
+  const candidates = [baseName, ...aliases, locationName].filter(Boolean);
+  const queries = new Set();
+
+  for (const candidate of candidates) {
+    if (address && address !== candidate) queries.add(`${address} ${candidate}`);
+    queries.add(candidate);
+  }
+
+  return [...queries].filter((query) => query.length >= 3);
+}
+
 export default function NaverMapContainer({ items = [] }) {
   const containerRef = useRef(null);
+  const geocodeCacheRef = useRef(new Map());
   const { map, status } = useNaverMap(containerRef);
   const { selectedMapItem, setSelectedMapItem } = useFilterStore();
 
   // 💡 1. 복수 선택을 위해 배열([])로 상태 변경
   const [activeCategories, setActiveCategories] = useState([]);
+  const [geocodedLocations, setGeocodedLocations] = useState({});
 
   // 지도가 로드되었을 때 확대/축소 바(zoomControl) 없애기
   useEffect(() => {
@@ -33,9 +51,102 @@ export default function NaverMapContainer({ items = [] }) {
   };
 
   // 💡 3. 선택된 카테고리 중 하나라도 일치하면 필터링 (배열이 비어있으면 전체 노출)
-  const filteredItems = activeCategories.length > 0
+  const filteredItems = useMemo(() => activeCategories.length > 0
     ? items.filter((item) => activeCategories.includes(item.type))
-    : items;
+    : items, [activeCategories, items]);
+
+  useEffect(() => {
+    if (status !== 'ready') return undefined;
+
+    let cancelled = false;
+    const groupedQueries = new Map();
+
+    for (const item of items) {
+      const hasCoordinates = item.latitude !== null
+        && item.latitude !== undefined
+        && item.longitude !== null
+        && item.longitude !== undefined
+        && Number.isFinite(Number(item.latitude))
+        && Number.isFinite(Number(item.longitude));
+      if (hasCoordinates) continue;
+
+      const queries = getGeocodeQueries(item);
+      const cacheKey = queries[0];
+      if (!cacheKey) continue;
+
+      if (geocodeCacheRef.current.has(cacheKey)) {
+        continue;
+      }
+
+      groupedQueries.set(cacheKey, queries);
+    }
+
+    const queries = [...groupedQueries.entries()];
+    let nextQueryIndex = 0;
+    const geocode = async (query) => {
+      try {
+        const params = new URLSearchParams({ query });
+        const response = await fetch(`/api/geocode?${params}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.coordinates ?? null;
+      } catch {
+        return null;
+      }
+    };
+
+    const worker = async () => {
+      while (!cancelled && nextQueryIndex < queries.length) {
+        const [cacheKey, queryCandidates] = queries[nextQueryIndex++];
+        let coordinates = null;
+        for (const query of queryCandidates) {
+          coordinates = await geocode(query);
+          if (coordinates) break;
+        }
+        geocodeCacheRef.current.set(cacheKey, coordinates);
+        if (coordinates && !cancelled) {
+            setGeocodedLocations((current) => ({
+            ...current,
+              [cacheKey]: coordinates,
+          }));
+        }
+      }
+    };
+
+    void Promise.all(Array.from({ length: Math.min(2, queries.length) }, worker));
+    return () => { cancelled = true; };
+  }, [items, status]);
+
+  const mapItems = useMemo(() => filteredItems.flatMap((item) => {
+    const hasCoordinates = item.latitude !== null
+      && item.latitude !== undefined
+      && item.longitude !== null
+      && item.longitude !== undefined
+      && Number.isFinite(Number(item.latitude))
+      && Number.isFinite(Number(item.longitude));
+    if (hasCoordinates) return [item];
+
+    const cacheKey = getGeocodeQueries(item)[0];
+    const coordinates = geocodedLocations[cacheKey];
+    return coordinates ? [{ ...item, ...coordinates }] : [];
+  }), [filteredItems, geocodedLocations]);
+
+  useEffect(() => {
+    const maps = window.naver?.maps;
+    if (status !== 'ready' || !map || !maps || mapItems.length === 0) return;
+
+    if (mapItems.length === 1) {
+      map.setCenter(new maps.LatLng(Number(mapItems[0].latitude), Number(mapItems[0].longitude)));
+      map.setZoom(14);
+      return;
+    }
+
+    const bounds = new maps.LatLngBounds();
+    for (const item of mapItems) {
+      bounds.extend(new maps.LatLng(Number(item.latitude), Number(item.longitude)));
+    }
+    map.fitBounds(bounds);
+  }, [map, mapItems, status]);
 
   return (
     <div className="relative h-[calc(100vh-190px)] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
@@ -81,6 +192,14 @@ export default function NaverMapContainer({ items = [] }) {
           </li>
         )}
       </ul>
+      <a
+        href="https://www.openstreetmap.org/copyright"
+        target="_blank"
+        rel="noreferrer"
+        className="absolute bottom-2 right-2 z-10 rounded bg-white/90 px-1.5 py-1 text-[10px] text-slate-600 shadow dark:bg-slate-900/90 dark:text-slate-300"
+      >
+        © OpenStreetMap contributors
+      </a>
       {status !== 'ready' && (
         <p className="absolute inset-x-4 bottom-4 z-1 rounded-lg bg-white/95 px-4 py-3 text-sm text-slate-600 shadow dark:bg-slate-900/95 dark:text-slate-300">
           {status === 'error'
@@ -88,7 +207,7 @@ export default function NaverMapContainer({ items = [] }) {
             : 'Naver 지도를 불러오는 중입니다.'}
         </p>
       )}
-      {filteredItems.map((item) => <MapMarker key={item.id} map={map} item={item} />)}
+      {mapItems.map((item) => <MapMarker key={item.id} map={map} item={item} />)}
       <DetailPanel item={selectedMapItem} onClose={() => setSelectedMapItem(null)} />
     </div>
   );

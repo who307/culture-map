@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllCultures, fetchCategoryCultures, fetchHomeCultures } from "@/utils/api";
+import { fetchCategoryCultures, fetchHomeCultures, fetchMapCultures } from "@/utils/api";
 import { useFilterStore } from "@/store/useFilterStore";
 
 export function useCultureData(category, options = {}) {
@@ -17,7 +17,7 @@ export function useCultureData(category, options = {}) {
 
       const requestOptions = { startDate, endDate, limit, sort, order, boxOfficeType };
       const data = category === "all"
-        ? await fetchAllCultures(requestOptions)
+        ? await fetchMapCultures(requestOptions)
         : await fetchCategoryCultures(category, requestOptions);
 
       if (selectedRegion === "ALL") return data;

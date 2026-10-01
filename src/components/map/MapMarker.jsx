@@ -28,6 +28,7 @@ export default function MapMarker({ map, item }) {
 
   useEffect(() => {
     const maps = window.naver?.maps;
+    if (item.latitude === null || item.latitude === undefined || item.longitude === null || item.longitude === undefined) return undefined;
     const latitude = Number(item.latitude);
     const longitude = Number(item.longitude);
     if (!maps || !map || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined;

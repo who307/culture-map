@@ -25,6 +25,7 @@ export async function fetchCategoryCultures(category, options = {}) {
     sort,
     order = "asc",
     boxOfficeType = "daily",
+    includeCoordinates = false,
   } = options;
   const endpoint = getEndpoint(category);
 
@@ -56,13 +57,44 @@ export async function fetchCategoryCultures(category, options = {}) {
     return limit ? movies.slice(0, limit) : movies;
   }
 
-  const url = new URL(`${BASE_URL}/${endpoint}`);
+  let cultures;
+  if (endpoint === "concerts" || endpoint === "musicals") {
+    const params = new URLSearchParams({
+      category: endpoint === "concerts" ? "concert" : "musical",
+      startDate: startDate ?? endDate,
+      endDate,
+    });
+    if (includeCoordinates) params.set("includeCoordinates", "true");
+    const response = await fetch(`/api/kopis?${params}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error ?? "KOPIS 공연 데이터를 불러오지 못했습니다.");
+    }
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${endpoint} 데이터를 불러오지 못했습니다.`);
+    const data = await response.json();
+    cultures = data.items ?? [];
+  } else if (endpoint === "festivals" || endpoint === "exhibitions") {
+    const route = endpoint === "festivals" ? "/api/tour-events" : "/api/culture-exhibitions";
+    const params = new URLSearchParams({
+      startDate: startDate ?? endDate,
+      endDate,
+    });
+    const response = await fetch(`${route}?${params}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error ?? `${endpoint} 데이터를 불러오지 못했습니다.`);
+    }
 
-  const data = await response.json();
-  let cultures = Array.isArray(data) ? data : data.data ?? [];
+    const data = await response.json();
+    cultures = data.items ?? [];
+  } else {
+    const url = new URL(`${BASE_URL}/${endpoint}`);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`${endpoint} 데이터를 불러오지 못했습니다.`);
+
+    const data = await response.json();
+    cultures = Array.isArray(data) ? data : data.data ?? [];
+  }
 
   if (startDate && endDate) {
     cultures = cultures.filter((item) => isEventInDateRange(item, startDate, endDate));
@@ -99,11 +131,27 @@ export async function fetchHomeCultures(startDate, endDate = startDate) {
   );
 }
 
-export async function fetchAllCultures(options = {}) {
-  const results = await Promise.all(
-    CULTURE_CATEGORIES.map(({ endpoint }) => fetchCategoryCultures(endpoint, options))
+export async function fetchMapCultures(options = {}) {
+  const mapCategories = CULTURE_CATEGORIES.filter(({ key }) => key !== "movie");
+  const results = await Promise.allSettled(
+    mapCategories.map(({ key }) => fetchCategoryCultures(key, { ...options, includeCoordinates: true }))
   );
-  return results.flat();
+
+  if (results.every((result) => result.status === "rejected")) {
+    throw new Error("지도 행사 정보를 불러오지 못했습니다.");
+  }
+
+  const items = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+  const uniqueItems = [...new Map(items.map((item) => [item.id, item])).values()];
+
+  return uniqueItems
+    .filter((item) => (item.latitude !== null
+      && item.latitude !== undefined
+      && item.longitude !== null
+      && item.longitude !== undefined
+      && Number.isFinite(Number(item.latitude))
+      && Number.isFinite(Number(item.longitude))
+    ) || Boolean(item.address || item.locationName));
 }
 
 export async function fetchMovieTheaters(options = {}) {

@@ -12,7 +12,7 @@ import { formatCategory } from "@/utils/formatters";
 const PAGE_SIZE = 10;
 
 export default function CultureCategoryPage({ category }) {
-  const [sort, setSort] = useState("popularityRank");
+  const [sort, setSort] = useState(category === "concert" || category === "musical" ? "startDate" : "popularityRank");
   const [boxOfficeType, setBoxOfficeType] = useState("daily");
   const startDate = useFilterStore((state) => state.startDate);
   const endDate = useFilterStore((state) => state.endDate);
@@ -98,7 +98,7 @@ export default function CultureCategoryPage({ category }) {
               type="button"
               onClick={() => selectPage((page) => Math.max(1, page - 1))}
               disabled={visiblePage === 1}
-              className="min-h-10 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="min-h-10 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               이전
             </button>
@@ -108,7 +108,7 @@ export default function CultureCategoryPage({ category }) {
                 type="button"
                 aria-current={visiblePage === page ? "page" : undefined}
                 onClick={() => selectPage(page)}
-                className={`h-10 min-w-10 rounded-lg border px-3 text-sm font-semibold ${
+                className={`h-10 min-w-10 rounded-lg border px-3 text-sm font-semibold cursor-pointer ${
                   visiblePage === page
                     ? "border-indigo-600 bg-indigo-600 text-white"
                     : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -121,7 +121,7 @@ export default function CultureCategoryPage({ category }) {
               type="button"
               onClick={() => selectPage((page) => Math.min(totalPages, page + 1))}
               disabled={visiblePage === totalPages}
-              className="min-h-10 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="min-h-10 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               다음
             </button>
