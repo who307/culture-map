@@ -122,6 +122,59 @@ src/
 - API 데이터는 TanStack Query가 요청·캐시·오류 상태를 관리합니다.
 - 정렬, 페이지, 지도 표시 모드는 각 화면의 로컬 상태로 관리합니다.
 
+### 상태 데이터 흐름도
+
+```mermaid
+flowchart TB
+    classDef server fill:#f9f871,stroke:#d4c442,stroke-width:2px,color:#333
+    classDef zustand fill:#00c9a7,stroke:#008f76,stroke-width:2px,color:#fff
+    classDef component fill:#4d8076,stroke:#2b4d47,stroke-width:2px,color:#fff
+    classDef local fill:#845ec2,stroke:#5a3f87,stroke-width:2px,color:#fff
+
+    subgraph ServerState ["☁️ 서버 상태 (TanStack Query)"]
+        API[(공공 API\nKOBIS, KOPIS 등)]
+        CustomHook["useCultureData()\n데이터 캐싱 및 fetching"]:::server
+        API -->|Fetch 응답| CustomHook
+    end
+
+    subgraph GlobalState ["🌐 전역 상태 (Zustand)"]
+        direction LR
+        FilterStore[("useFilterStore\n(날짜, 지역, 선택 마커)")]:::zustand
+        BookmarkStore[("useBookmarkStore\n(localStorage)")]:::zustand
+    end
+
+    subgraph UIComponents ["🖥️ 화면 및 UI 컴포넌트"]
+        direction TB
+        PageComp["라우트 페이지\n(Home, Movies, Map 등)"]:::component
+        
+        subgraph ListArea ["리스트 뷰"]
+            ListComp["CultureList"]:::local
+            CardComp["CultureCard"]:::local
+        end
+        
+        subgraph MapArea ["지도 뷰"]
+            MapComp["NaverMap"]:::local
+            MarkerComp["MapMarker"]:::local
+            DetailComp["DetailPanel"]:::local
+        end
+        
+        HeaderComp["DateRangeDock\n(헤더/날짜선택)"]:::local
+    end
+
+    CustomHook == "data, isLoading" ==> PageComp
+    PageComp -- "props (data 배열)" --> ListComp
+    ListComp -- "props (item 객체)" --> CardComp
+    PageComp -- "props (data 배열)" --> MapComp
+    MapComp -- "props (좌표, item 객체)" --> MarkerComp
+    
+    HeaderComp -. "setStart/EndDate" .-> FilterStore
+    FilterStore -. "startDate, endDate" .-> CustomHook
+    MarkerComp -. "setSelectedMapItem" .-> FilterStore
+    FilterStore -. "selectedMapItem" .-> DetailComp
+    CardComp -. "add/remove" .-> BookmarkStore
+    DetailComp -. "add/remove" .-> BookmarkStore
+```
+
 ## 트러블슈팅
 
 ### 좌표가 없는 공연·전시가 지도에 표시되지 않는 문제
