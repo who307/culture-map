@@ -1,6 +1,6 @@
 import { isEventInDateRange } from "@/utils/date";
 
-const BASE_URL = process.env.NEXT_PUBLIC_CULTURE_API_URL ?? "http://localhost:4000";
+const BASE_URL = "http://localhost:4000";
 
 export const CULTURE_CATEGORIES = [
   { key: "movie", endpoint: "movies", label: "영화", path: "/movies" },
