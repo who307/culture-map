@@ -38,7 +38,7 @@
 
 - Next.js 16 App Router, React 19, JavaScript
 - Tailwind CSS 4
-- TanStack Query: API 요청 상태와 캐시
+- TanStack Query: 공공 API 서버 상태 관리, 카테고리별 캐싱, 중복 요청 제어, 로딩·에러 상태 관리
 - Zustand: 날짜 범위, 지역 필터, 선택 마커, 위시리스트 상태
 - `fast-xml-parser`: KOPIS XML 응답 파싱
 - Naver Maps JavaScript API: 지도와 마커
