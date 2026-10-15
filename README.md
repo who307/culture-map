@@ -6,6 +6,7 @@
 - **제작 목적:** 여러 기관의 문화 정보를 한 화면에서 비교하고, 일정에 맞는 장소를 찾을 수 있도록 제작했습니다.
 - **주요 사용자:** 영화·공연·축제·전시 일정을 날짜와 지역 기준으로 탐색하려는 사용자
 - **개발 기간:** 2026.09.29 ~ 2026.10.01
+- **배포 주소:** [https://culture-map-pi.vercel.app](https://culture-map-pi.vercel.app)
 
 ## 주요 기능
 
@@ -75,6 +76,16 @@ npm run dev
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다. 프로덕션 빌드는 `npm run build`, 빌드 결과 실행은 `npm start`입니다.
 
 `db.json` 기반 JSON Server는 필요한 경우 별도 터미널에서 `npm run server`로 실행합니다. 현재 영화·공연·행사·전시 화면은 각 외부 API 라우트를 사용하며 JSON Server 실행에 의존하지 않습니다.
+
+## 배포
+
+[Vercel](https://vercel.com)로 배포했습니다. GitHub 저장소를 연결해 두었기 때문에 `main` 브랜치에 푸시하면 자동으로 프로덕션 배포가 진행되고, 다른 브랜치와 PR에는 미리보기 배포가 생성됩니다.
+
+- **배포 주소:** [https://culture-map-pi.vercel.app](https://culture-map-pi.vercel.app)
+- **프레임워크 설정:** Vercel이 Next.js를 자동으로 인식하므로 빌드 명령과 출력 경로는 기본값을 사용합니다.
+- **환경변수:** `.env.local`은 저장소에 포함되지 않으므로, [설치 및 실행](#설치-및-실행)의 키 6개를 Vercel 프로젝트의 **Settings → Environment Variables**에 등록했습니다. 값을 바꾼 뒤에는 재배포해야 반영되며, 특히 `NEXT_PUBLIC_` 변수는 빌드 시점에 코드에 포함됩니다.
+- **Naver 지도 도메인:** NCP 콘솔의 Maps 애플리케이션 **Web 서비스 URL**에 Vercel 배포 도메인을 등록해야 지도 인증이 통과됩니다.
+- **JSON Server:** Vercel에서는 `npm run server`(JSON Server)가 실행되지 않습니다. 배포 환경의 모든 화면은 Next.js API 라우트로 데이터를 받습니다.
 
 ## API 연결
 
