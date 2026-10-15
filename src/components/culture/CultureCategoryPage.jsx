@@ -9,7 +9,7 @@ import { useCultureData } from "@/hooks/useCultureData";
 import { useFilterStore } from "@/store/useFilterStore";
 import { formatCategory } from "@/utils/formatters";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export default function CultureCategoryPage({ category }) {
   const [sort, setSort] = useState(category === "concert" || category === "musical" ? "startDate" : "popularityRank");
