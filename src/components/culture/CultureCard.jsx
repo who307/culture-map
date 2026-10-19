@@ -15,7 +15,13 @@ const CATEGORY_MAP = {
   exhibition: { label: '전시', color: 'bg-amber-100 text-amber-700' },
 };
 
-const MOVIE_COVER_ACCENTS = ['#e76f51', '#2a9d8f', '#e9c46a', '#6d9dc5', '#b57ab8'];
+// 146250 → 14.6만, 18876613480 → 188.8억
+function formatKoreanUnit(value) {
+  const number = Number(value) || 0;
+  if (number >= 100_000_000) return `${(number / 100_000_000).toFixed(1).replace(/\.0$/, '')}억`;
+  if (number >= 10_000) return `${(number / 10_000).toFixed(1).replace(/\.0$/, '')}만`;
+  return number.toLocaleString();
+}
 
 export default function CultureCard({ item, onClick }) {
   const { bookmarks, toggleBookmark } = useBookmarkStore();
@@ -29,7 +35,7 @@ export default function CultureCard({ item, onClick }) {
     ?.split('~')
     .map((date) => date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'))
     .join(' ~ ');
-  const movieAccent = MOVIE_COVER_ACCENTS[(Math.max(1, Number(item.rank) || 1) - 1) % MOVIE_COVER_ACCENTS.length];
+  const hasMovieCover = !posterUrl && Boolean(item.movieCd);
   const salesShare = Math.min(100, Math.max(0, Number(item.salesShare) || 0));
 
   const handleBookmarkClick = (e) => {
@@ -40,7 +46,7 @@ export default function CultureCard({ item, onClick }) {
   return (
     <div
       onClick={() => onClick && onClick(item)}
-      className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col"
+      className={`group relative bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col ${onClick ? 'cursor-pointer' : ''}`}
     >
       {/* 썸네일 이미지 영역 */}
       <div className="relative aspect-3/4 w-full bg-slate-100 overflow-hidden">
@@ -54,46 +60,31 @@ export default function CultureCard({ item, onClick }) {
             unoptimized={Boolean(item.movieCd)}
             onError={() => setFailedPosterUrl(posterUrl)}
           />
-        ) : !posterUrl && item.movieCd ? (
-          <div className="relative flex h-full flex-col justify-between overflow-hidden bg-[#142126] p-5 pt-14 text-white">
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-0 right-0 w-1.5"
-              style={{ backgroundColor: movieAccent }}
-            />
-            <span aria-hidden="true" className="absolute -bottom-8 -right-2 text-[10rem] font-black leading-none text-white/[0.035]">
-              {String(item.rank).padStart(2, '0')}
-            </span>
-            <div className="relative flex items-center justify-between gap-2">
-              <span className="text-[10px] font-bold text-white/65">KOBIS · BOX OFFICE</span>
-              <span
-                className="rounded-sm border px-2 py-1 text-[10px] font-bold"
-                style={{ borderColor: movieAccent, color: movieAccent }}
-              >
-                {item.boxOfficeType === 'weekend' ? '주말' : '일일'} {String(item.rank).padStart(2, '0')}위
+        ) : hasMovieCover ? (
+          <div className="flex h-full flex-col bg-slate-900 p-4 pt-14 text-white">
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-bold leading-none tabular-nums">{item.rank}</span>
+              <span className="text-xs font-medium text-white/60">
+                {item.boxOfficeType === 'weekend' ? '주말' : '일일'} 박스오피스
               </span>
             </div>
-            <div className="relative my-5">
-              <span className="mb-3 block h-1 w-8" style={{ backgroundColor: movieAccent }} />
-              <h2 className="line-clamp-4 break-keep text-3xl font-black leading-tight">
-                {item.title}
-              </h2>
-            </div>
-            <div className="relative space-y-2">
-              <div className="flex items-center justify-between gap-2 text-[10px] font-semibold">
-                <span className="text-white/65">매출 점유율</span>
-                <span>{salesShare}%</span>
+            <h2 className="mt-auto line-clamp-3 break-keep text-lg font-semibold leading-snug">
+              {item.title}
+            </h2>
+            <div className="mt-4 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/60">
+                  {item.boxOfficeType === 'weekend' ? '주말' : '일일'} 매출 {formatKoreanUnit(item.salesAmount)}원
+                </span>
+                <span className="font-semibold tabular-nums">점유율 {salesShare}%</span>
               </div>
               <div className="h-1 overflow-hidden rounded-full bg-white/15">
-                <span
-                  className="block h-full rounded-full"
-                  style={{ width: `${salesShare}%`, backgroundColor: movieAccent }}
-                />
+                <span className="block h-full rounded-full bg-white/80" style={{ width: `${salesShare}%` }} />
               </div>
-              <p className="pt-1 text-[10px] font-medium text-white/55">
-                {boxOfficeRange} · 전국 박스오피스
-              </p>
             </div>
+            <p className="mt-3 text-[10px] text-white/40">
+              {boxOfficeRange} · KOBIS 전국 박스오피스
+            </p>
           </div>
         ) : (
             <Image
@@ -108,7 +99,7 @@ export default function CultureCard({ item, onClick }) {
 
         {/* 카테고리 뱃지 */}
         <span
-          className={`absolute top-2.5 left-2.5 px-2.5 py-1 text-[11px] font-bold rounded-md shadow-sm backdrop-blur-md ${category.color}`}
+          className={`absolute top-2.5 left-2.5 px-2.5 py-1 text-[11px] font-bold rounded-md shadow-sm backdrop-blur-md ${hasMovieCover ? 'bg-white/15 text-white' : category.color}`}
         >
           {category.label}
         </span>
@@ -117,7 +108,7 @@ export default function CultureCard({ item, onClick }) {
         <button
           type="button"
           onClick={handleBookmarkClick}
-          className="absolute top-2.5 right-2.5 p-2 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-colors"
+          className="absolute top-2.5 right-2.5 p-2 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-colors cursor-pointer"
           aria-label="찜하기"
         >
           <svg
@@ -147,21 +138,24 @@ export default function CultureCard({ item, onClick }) {
           </h3>
           {item.movieCd ? (
             <>
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500">
-                관객 {item.audienceCount.toLocaleString()}명 · 누적 {item.cumulativeAudience.toLocaleString()}명
+              <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                👥 {formatKoreanUnit(item.audienceCount)}명 · 누적 {formatKoreanUnit(item.cumulativeAudience)}명
               </p>
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500">
-                {item.screenCount.toLocaleString()}개 스크린 · {item.screeningCount.toLocaleString()}회 상영
+              <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                🎞️ {item.screenCount.toLocaleString()}개관 · {item.screeningCount.toLocaleString()}회 상영
               </p>
-              <a
-                href={`https://search.naver.com/search.naver?query=${encodeURIComponent(`${item.title} 상영시간표`)}`}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => event.stopPropagation()}
-                className="mt-2 inline-flex text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-              >
-                네이버에서 상영시간표 검색 ↗
-              </a>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                <span className="truncate text-slate-500">KOBIS</span>
+                <a
+                  href={`https://search.naver.com/search.naver?query=${encodeURIComponent(`${item.title} 상영시간표`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                  className="font-semibold text-indigo-600 hover:underline"
+                >
+                  상영시간표 ↗
+                </a>
+              </div>
             </>
           ) : (
             <p className="text-xs text-slate-500 mt-1 line-clamp-1">
@@ -197,17 +191,12 @@ export default function CultureCard({ item, onClick }) {
           )}
         </div>
 
-        <div className={`mt-3 pt-2.5 border-t border-slate-50 flex items-center ${hasPrice ? 'justify-between' : 'justify-start'} text-[11px]`}>
+        <div className={`mt-3 pt-2.5 border-t border-slate-50 flex items-center ${hasPrice || item.movieCd ? 'justify-between' : 'justify-start'} text-[11px]`}>
           {item.movieCd ? (
-            <div className="grid w-full gap-1 text-[11px]">
+            <>
               <span className="text-slate-400 font-medium">개봉 {item.openDate || '정보 없음'}</span>
-              <span className="font-bold text-indigo-600">
-                {item.boxOfficeType === 'weekend' ? '주말' : '일일'} 매출 {item.salesAmount.toLocaleString()}원
-              </span>
-              <span className="font-bold text-indigo-600">
-                누적 매출 {item.cumulativeSales.toLocaleString()}원
-              </span>
-            </div>
+              <span className="font-bold text-indigo-600">누적 {formatKoreanUnit(item.cumulativeSales)}원</span>
+            </>
           ) : (
             <>
               <span className="text-slate-400 font-medium">

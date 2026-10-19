@@ -35,7 +35,7 @@ CultureCategoryPage
        └─ CultureCard(item)
 ```
 
-`CultureCategoryPage`가 받은 `category`와 날짜 범위로 데이터를 요청하고, 결과 중 현재 페이지의 10개를 `CultureList`에 `items`로 넘깁니다. `CultureList`는 배열을 순회하면서 각 항목을 `CultureCard`의 `item` prop으로 전달합니다. `key={item.id}`는 목록 항목의 식별자로 React가 변경된 항목을 효율적으로 구분하게 합니다.
+`CultureCategoryPage`가 받은 `category`와 날짜 범위로 데이터를 요청하고, 결과 중 현재 페이지의 20개를 `CultureList`에 `items`로 넘깁니다. `CultureList`는 배열을 순회하면서 각 항목을 `CultureCard`의 `item` prop으로 전달합니다. `key={item.id}`는 목록 항목의 식별자로 React가 변경된 항목을 효율적으로 구분하게 합니다.
 
 지도에서도 같은 원칙을 볼 수 있습니다. `NaverMapContainer`는 `items`를 각 `MapMarker`에 전달하고, 선택된 `item`은 `DetailPanel`에 전달합니다. 마커를 클릭하면 `MapMarker`가 Zustand의 `setSelectedMapItem` action을 직접 호출합니다. `NaverMapContainer`가 store의 선택값을 구독하므로 변경된 항목이 `DetailPanel` prop으로 전달됩니다. 이 예제에서는 부모가 callback prop을 자식에게 전달하는 대신 두 컴포넌트가 공유 store를 통해 연결됩니다.
 
@@ -137,7 +137,7 @@ Provider는 `src/components/common/ReactQueryProvider.jsx`에 있고, `src/app/l
 3. `useCultureData`의 `queryKey`와 `queryFn`이 날짜 범위·지역·정렬을 어떻게 반영하는지 봅니다.
 4. `src/utils/api.js`에서 JSON Server와 KOBIS 요청, 일정 겹침 필터, 정렬을 확인합니다.
 5. `/api/box-office` 서버 라우트에서 KOBIS 응답을 화면용 데이터로 정규화하는 과정을 확인합니다.
-6. 결과가 현재 페이지 10개로 잘린 뒤 `CultureList`와 `CultureCard` props로 내려가는 것을 추적합니다.
+6. 결과가 현재 페이지 20개로 잘린 뒤 `CultureList`와 `CultureCard` props로 내려가는 것을 추적합니다.
 7. 위시리스트 버튼 클릭이 `toggleBookmark`를 통해 어떻게 공유 상태와 LocalStorage를 바꾸는지 확인합니다.
 
 지도 화면은 `src/app/map/page.jsx`에서 시작해 `useCultureData("all")`, `NaverMapContainer`, `MapMarker`, `DetailPanel` 순으로 읽으면 됩니다. SDK 객체와 지도 생성 과정은 `src/hooks/useNaverMap.js`에서 확인할 수 있습니다.
@@ -145,13 +145,15 @@ Provider는 `src/components/common/ReactQueryProvider.jsx`에 있고, `src/app/l
 ## 7. 실제 구현된 기능
 
 - **날짜 범위:** `useFilterStore`는 오늘을 시작일·종료일로 저장합니다. 헤더의 두 날짜 입력이 범위를 갱신하고, query key에 반영됩니다. 비영화 일정은 선택 구간과 겹치는 일정을 반환하며 영화는 종료일 기준으로 조회합니다.
-- **카테고리 페이지네이션:** `CultureCategoryPage`가 필터링·정렬된 결과를 10개씩 나눠 보여줍니다. 날짜 범위·정렬·박스오피스 모드가 바뀌면 1페이지로 돌아옵니다. KOBIS 박스오피스는 최대 10개라 보통 한 페이지입니다.
+- **카테고리 페이지네이션:** `CultureCategoryPage`가 필터링·정렬된 결과를 20개씩 나눠 보여줍니다. 날짜 범위·정렬·박스오피스 모드가 바뀌면 1페이지로 돌아옵니다. KOBIS 박스오피스는 최대 10개라 항상 한 페이지입니다.
 - **데이터 공급원:** `db.json`의 문화 배열은 화면에서 사용하지 않습니다. 영화는 KOBIS, 콘서트·뮤지컬은 KOPIS, 지역 행사는 한국관광콘텐츠랩, 전시는 문화포털 데이터를 사용합니다.
 - **KOBIS 박스오피스:** `/api/box-office`가 일일 또는 주말 데이터를 조회합니다. 오늘 일일 데이터가 없으면 전일 데이터를 반환할 수 있습니다. `salesAmt`는 해당 기간 매출, `salesAcc`는 누적 매출입니다.
 - **KOPIS 공연목록:** `/api/kopis`가 콘서트·뮤지컬 공연목록을 XML로 조회한 뒤 화면용 공통 데이터로 변환합니다. API 키는 서버의 `KOPIS_API_KEY` 환경변수로만 전달합니다. KOPIS 목록에는 인기순위와 공연장 좌표가 없어 시작일·이름순만 제공하며, 지도 좌표는 별도 공연장 상세 연동이 필요합니다.
 - **행사·전시 API:** `/api/tour-events`는 한국관광콘텐츠랩 JSON 응답을, `/api/culture-exhibitions`는 문화포털 응답을 공통 문화 데이터로 변환합니다. 키는 각각 서버 환경변수 `KTO_TOUR_API_KEY`, `CULTURE_PORTAL_API_KEY`로 설정합니다.
 - **극장 마스터:** `/api/movie-theaters`와 `fetchMovieTheaters()`는 행정안전부 영화상영관 인허가 정보를 조회합니다. 극장 마스터에는 영화별 상영 시간표가 없으므로 실제 상영 여부를 연결하지 않습니다.
-- **포스터:** KOBIS 박스오피스 응답은 포스터 주소를 제공하지 않습니다. `CultureCard`는 `posterUrl` 또는 `imageUrl`을 사용할 수 있고, 둘 다 없으면 순위·제목 커버를 표시합니다.
+- **포스터:** KOBIS 박스오피스 응답은 포스터 주소를 제공하지 않습니다. `CultureCard`는 `posterUrl` 또는 `imageUrl`을 사용할 수 있고, 둘 다 없으면 무채색(`slate-900`) 순위·제목 커버를 표시합니다. 커버에는 순위, 일일/주말 구분, 제목, 기간 매출과 점유율 막대, 집계 기간이 들어갑니다.
+- **영화 카드 정보 영역:** 다른 카드의 `📍 장소` 자리에 `👥 관객 · 누적 관객`과 `🎞️ 스크린 · 상영 횟수`를, 예매 링크 자리에 `KOBIS` + `상영시간표 ↗`를, 하단에 개봉일과 누적 매출을 둡니다. 관객 수와 매출은 `formatKoreanUnit()`으로 만·억 단위로 줄여 한 줄에 맞춥니다(예: 146,250 → 14.6만).
+- **커서:** 카드 루트는 `onClick` prop이 있을 때만 `cursor-pointer`를 붙입니다. 현재 목록은 카드에 `onClick`을 넘기지 않으므로 실제로 눌리는 찜 버튼과 외부 링크에만 포인터가 보입니다. Tailwind v4는 `button`의 기본 커서를 `default`로 두므로 찜 버튼에는 `cursor-pointer`를 직접 지정합니다.
 - **지역 필터:** 지도 화면의 지역 선택값은 `selectedRegion`으로 Zustand에 저장됩니다. `useCultureData`가 데이터를 받은 뒤 각 항목의 `address`에 선택 지역이 포함되는지 확인해 필터링합니다.
 - **지도 상세 선택:** 마커를 클릭하면 선택한 문화 항목이 `selectedMapItem`에 저장됩니다. 지도 컨테이너는 이 값을 구독하고 `DetailPanel`에 전달하며, 닫기 버튼은 선택값을 `null`로 초기화합니다.
 - **위시리스트 저장:** `useBookmarkStore`는 문화 항목 ID를 추가·삭제하고, Zustand `persist` 미들웨어를 통해 `culture-map-storage`라는 LocalStorage 키에 위시리스트 배열을 저장합니다.
@@ -165,7 +167,7 @@ Provider는 `src/components/common/ReactQueryProvider.jsx`에 있고, `src/app/l
 - 시작일·종료일을 `queryKey`에서 빼면 범위 변경 후 어떤 캐시 문제가 생길까요?
 - 일정 기간 겹침을 `item.startDate <= endDate && item.endDate >= startDate`로 판정하는 이유는 무엇일까요?
 - KOBIS의 `salesAmt`와 `salesAcc`는 각각 어떤 매출을 뜻할까요?
-- KOBIS가 최대 10개 영화를 반환하면 10개 단위 페이지네이션은 어떻게 보일까요?
+- KOBIS가 최대 10개 영화를 반환하면 20개 단위 페이지네이션은 어떻게 보일까요?
 - 위시리스트 store에서 `partialize`를 제거하면 LocalStorage에 무엇이 더 저장될까요?
 - 지도 상태를 전역 store 대신 `NaverMapContainer`의 로컬 state로 옮기면 어떤 컴포넌트 경계가 영향을 받을까요?
 - `Header`에서 store 전체를 구독하는 것과 날짜만 selector로 구독하는 것의 렌더링 차이는 무엇일까요?
