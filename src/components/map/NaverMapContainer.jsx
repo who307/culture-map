@@ -5,6 +5,7 @@ import DetailPanel from '@/components/map/DetailPanel';
 import MapMarker, { MARKER_STYLES } from '@/components/map/MapMarker';
 import { useNaverMap } from '@/hooks/useNaverMap';
 import { useFilterStore } from '@/store/useFilterStore';
+import { hasCoordinates } from '@/utils/location';
 
 function getGeocodeQueries(item) {
   const address = String(item.address ?? '').trim();
@@ -62,13 +63,7 @@ export default function NaverMapContainer({ items = [] }) {
     const groupedQueries = new Map();
 
     for (const item of items) {
-      const hasCoordinates = item.latitude !== null
-        && item.latitude !== undefined
-        && item.longitude !== null
-        && item.longitude !== undefined
-        && Number.isFinite(Number(item.latitude))
-        && Number.isFinite(Number(item.longitude));
-      if (hasCoordinates) continue;
+      if (hasCoordinates(item)) continue;
 
       const queries = getGeocodeQueries(item);
       const cacheKey = queries[0];
@@ -118,13 +113,7 @@ export default function NaverMapContainer({ items = [] }) {
   }, [items, status]);
 
   const mapItems = useMemo(() => filteredItems.flatMap((item) => {
-    const hasCoordinates = item.latitude !== null
-      && item.latitude !== undefined
-      && item.longitude !== null
-      && item.longitude !== undefined
-      && Number.isFinite(Number(item.latitude))
-      && Number.isFinite(Number(item.longitude));
-    if (hasCoordinates) return [item];
+    if (hasCoordinates(item)) return [item];
 
     const cacheKey = getGeocodeQueries(item)[0];
     const coordinates = geocodedLocations[cacheKey];
@@ -149,11 +138,11 @@ export default function NaverMapContainer({ items = [] }) {
   }, [map, mapItems, status]);
 
   return (
-    <div className="relative h-[calc(100vh-190px)] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+    <div className="relative h-[calc(100dvh-210px)] min-h-96 w-full overflow-hidden rounded-xl border border-line bg-sunken">
       <div ref={containerRef} className="h-250 w-full" />
       <ul
-        aria-label="지도 마커 카테고리"
-        className="absolute left-3 right-16 top-3 z-10 w-fit flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-slate-200/80 bg-white/95 px-3 py-2 text-xs shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95"
+        aria-label="지도 마커 카테고리 필터"
+        className="absolute left-3 right-16 top-3 z-10 flex w-fit flex-wrap items-center gap-1 rounded-xl border border-line-strong bg-surface p-1 text-sm shadow-sm"
       >
         {Object.entries(MARKER_STYLES).map(([category, style]) => {
           // 💡 4. 현재 카테고리가 선택 배열에 포함되어 있는지 확인
@@ -161,34 +150,37 @@ export default function NaverMapContainer({ items = [] }) {
           const isAnySelected = activeCategories.length > 0;
 
           return (
-            <li
-              key={category}
-              // 💡 5. 선택된 카테고리들은 선명하게, 나머지는 흐리게 처리 (아무것도 선택 안 했을 땐 모두 선명하게)
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap text-slate-700 dark:text-slate-200 cursor-pointer transition-opacity duration-200 ${
-                isAnySelected && !isSelected ? 'opacity-40' : 'opacity-100'
-              }`}
-              onClick={() => handleCategoryClick(category)}
-            >
-              <span
-                aria-hidden="true"
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm transition-transform ${
-                  isSelected ? 'scale-110 ring-2 ring-slate-400 dark:ring-slate-500' : ''
-                }`}
-                style={{ backgroundColor: style.color }}
+            <li key={category}>
+              {/* 💡 5. 선택된 카테고리는 배경으로 강조, 나머지는 흐리게 (아무것도 선택 안 했을 땐 모두 선명하게) */}
+              <button
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => handleCategoryClick(category)}
+                className={`inline-flex h-9 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 font-medium text-ink transition-[background-color,opacity] duration-150 ${
+                  isSelected ? 'bg-sunken font-semibold' : 'hover:bg-sunken'
+                } ${isAnySelected && !isSelected ? 'opacity-55' : 'opacity-100'}`}
               >
-                {style.icon}
-              </span>
-              <span className={isSelected ? 'font-bold' : ''}>{style.label}</span>
+                {/* 지도의 점 마커와 같은 모양의 색 점: 마커를 읽는 기준 */}
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-3 rounded-full border-2 border-surface shadow-[0_0_0_1px_var(--line-strong)]"
+                  style={{ backgroundColor: style.color }}
+                />
+                {style.label}
+              </button>
             </li>
           );
         })}
         {/* 💡 6. 활성화된 필터가 있을 때만 전체 리셋 버튼 노출 */}
         {activeCategories.length > 0 && (
-          <li
-            className="text-[10px] text-slate-400 dark:text-slate-500 cursor-pointer hover:underline pl-1 border-l border-slate-200 dark:border-slate-700"
-            onClick={() => setActiveCategories([])}
-          >
-            초기화
+          <li className="border-l border-line pl-1">
+            <button
+              type="button"
+              onClick={() => setActiveCategories([])}
+              className="h-9 cursor-pointer rounded-lg px-2.5 text-xs font-semibold text-ink-soft transition-colors duration-150 hover:bg-sunken hover:text-ink"
+            >
+              초기화
+            </button>
           </li>
         )}
       </ul>
@@ -196,18 +188,18 @@ export default function NaverMapContainer({ items = [] }) {
         href="https://www.openstreetmap.org/copyright"
         target="_blank"
         rel="noreferrer"
-        className="absolute bottom-2 right-2 z-10 rounded bg-white/90 px-1.5 py-1 text-[10px] text-slate-600 shadow dark:bg-slate-900/90 dark:text-slate-300"
+        className="absolute bottom-2 right-2 z-10 rounded bg-surface/90 px-1.5 py-1 text-[11px] text-ink-soft shadow"
       >
         © OpenStreetMap contributors
       </a>
       {status !== 'ready' && (
-        <p className="absolute inset-x-4 bottom-4 z-1 rounded-lg bg-white/95 px-4 py-3 text-sm text-slate-600 shadow dark:bg-slate-900/95 dark:text-slate-300">
+        <p role="status" className="absolute inset-x-4 bottom-4 z-1 rounded-lg bg-surface/95 px-4 py-3 text-sm text-ink-soft shadow">
           {status === 'error'
             ? 'Naver 지도를 불러오지 못했습니다. 키와 허용 도메인 설정을 확인해주세요.'
-            : 'Naver 지도를 불러오는 중입니다.'}
+            : 'Naver 지도를 불러오는 중…'}
         </p>
       )}
-      {mapItems.map((item) => <MapMarker key={item.id} map={map} item={item} />)}
+      {mapItems.map((item) => <MapMarker key={item.id} map={map} item={item} selected={selectedMapItem?.id === item.id} />)}
       <DetailPanel item={selectedMapItem} onClose={() => setSelectedMapItem(null)} />
     </div>
   );

@@ -7,8 +7,7 @@ import Link from "next/link";
 import { useCultureData } from "@/hooks/useCultureData";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
 import { useFilterStore } from "@/store/useFilterStore";
-
-const REGIONS = ["ALL", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "제주"];
+import { REGIONS } from "@/utils/regions";
 
 export default function MapPage() {
   const [mapMode, setMapMode] = useState("all");
@@ -28,27 +27,26 @@ export default function MapPage() {
 
   return (
       <>
-          <main className="mx-auto max-w-7xl px-4 py-6">
+          <main id="main-content" className="mx-auto max-w-7xl px-4 py-8">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                      <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">장소 기반 문화 탐색</p>
-                      <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">지도 탐색</h1>
-                  </div>
+                  <h1 className="font-display text-[1.75rem] leading-tight text-ink md:text-[2rem]">지도 탐색</h1>
                   <div className="flex flex-wrap items-end gap-3">
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+                      <label className="flex items-center gap-2 text-sm font-medium text-ink-soft">
                           <span>지역</span>
                           <select
+                              name="region"
+                              autoComplete="off"
                               value={selectedRegion}
                               onChange={(event) => setSelectedRegion(event.target.value)}
-                              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                              className="h-10 cursor-pointer rounded-lg border border-line bg-surface px-3 text-ink">
                               {REGIONS.map((region) => (
-                                  <option key={region} value={region}>
-                                      {region === "ALL" ? "전체 지역" : region}
+                                  <option key={region.value} value={region.value}>
+                                      {region.label}
                                   </option>
                               ))}
                           </select>
                       </label>
-                      <div role="group" aria-label="지도 표시 항목" className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+                      <div role="group" aria-label="지도 표시 항목" className="inline-flex h-10 items-center rounded-lg border border-line bg-surface p-1">
                           {[
                               { value: "all", label: "전체 문화" },
                               { value: "bookmarks", label: "위시리스트" },
@@ -58,8 +56,8 @@ export default function MapPage() {
                                   type="button"
                                   aria-pressed={mapMode === option.value}
                                   onClick={() => setMapMode(option.value)}
-                                  className={`h-8 rounded-md px-3 text-xs font-semibold transition-colors ${
-                                      mapMode === option.value ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                  className={`h-8 cursor-pointer rounded-md px-3 text-sm font-semibold transition-colors duration-150 ${
+                                      mapMode === option.value ? "bg-ink text-paper" : "text-ink-soft hover:bg-sunken hover:text-ink"
                                   }`}>
                                   {option.label}
                               </button>
@@ -68,20 +66,20 @@ export default function MapPage() {
                   </div>
               </div>
               {isError ? (
-                  <div className="rounded-lg border border-rose-200 bg-white p-8 text-center dark:border-rose-900 dark:bg-slate-900">
-                      <p className="text-sm text-rose-600 dark:text-rose-400">지도 데이터를 불러오지 못했습니다.</p>
-                      <Button type="button" className="mt-4" onClick={() => refetch()}>
+                  <div role="alert" className="rounded-xl border border-line bg-surface p-8 text-center">
+                      <p className="text-sm font-semibold text-danger">지도 데이터를 불러오지 못했습니다.</p>
+                      <Button type="button" variant="secondary" className="mt-4" onClick={() => refetch()}>
                           다시 시도
                       </Button>
                   </div>
               ) : (
                   <>
-                      {isLoading && <p className="mb-3 text-sm text-slate-500">문화 일정을 불러오는 중입니다.</p>}
+                      <p role="status" className="mb-3 text-sm text-ink-soft empty:hidden">{isLoading ? "문화 일정을 불러오는 중…" : ""}</p>
                       {!isLoading && mapItems.length === 0 && (
-                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-ink-soft">
                               <p>{mapMode === "bookmarks" && savedItems.length === 0 ? "위시리스트에 담은 비영화 일정이 없습니다." : "선택한 조건에서 지도에 표시할 일정이 없습니다."}</p>
                               {mapMode === "bookmarks" && (
-                                  <Link href="/bookmarks" className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
+                                  <Link href="/bookmarks" className="font-semibold text-accent underline-offset-2 hover:underline">
                                       위시리스트 보기
                                   </Link>
                               )}
