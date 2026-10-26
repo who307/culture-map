@@ -1,72 +1,107 @@
 "use client";
 
+import Link from "next/link";
 import { useFilterStore } from "@/store/useFilterStore";
 import { useCultureData } from "@/hooks/useCultureData";
 import CultureCard from "@/components/culture/CultureCard";
+import WeekStrip from "@/components/culture/WeekStrip";
 import SkeletonCard from "@/components/common/SkeletonCard";
-
-const CATEGORIES = [
-    { key: "movie", title: "🎬 박스오피스 영화", href: "/movies" },
-    { key: "concert", title: "🎤 인기 콘서트", href: "/concerts" },
-    { key: "musical", title: "🎭 대표 뮤지컬", href: "/musicals" },
-    { key: "festival", title: "🎪 지역 축제 및 행사", href: "/festivals" },
-    { key: "exhibition", title: "🖼️ 전시회 및 미술관", href: "/exhibitions" },
-];
+import Button from "@/components/common/Button";
+import { formatReadableRange } from "@/utils/formatters";
+import { CATEGORIES } from "@/utils/categories";
+import { REGIONS } from "@/utils/regions";
+import { isFutureDate } from "@/utils/date";
 
 export default function HomePage() {
-    const { startDate, endDate } = useFilterStore();
-    const { data, isLoading, isError } = useCultureData("home");
+    const { startDate, endDate, selectedRegion, setSelectedRegion } = useFilterStore();
+    const { data, isLoading, isError, refetch } = useCultureData("home");
+    const regionLabel = selectedRegion === "ALL" ? "전국" : selectedRegion;
+    // 박스오피스는 지난 날짜의 집계만 있어 기간 전체가 미래면 영화 줄을 숨김
+    const visibleCategories = isFutureDate(startDate)
+        ? CATEGORIES.filter((category) => category.key !== "movie")
+        : CATEGORIES;
 
     return (
-        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-900 transition-colors duration-200">
-            <main className="max-w-7xl mx-auto px-4 py-8 space-y-10">
-                {/* 히어로 배너 */}
-                <section className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-800 text-white shadow-lg">
-                    <span className="text-xs font-bold tracking-widest text-indigo-200 dark:text-indigo-300 uppercase">Culture Map Today</span>
-                    <h1 className="text-2xl md:text-3xl font-extrabold mt-1">{startDate} ~ {endDate} 추천 문화생활 🎯</h1>
-                    <p className="text-sm text-indigo-100 dark:text-indigo-200 mt-2">선택한 기간에 즐길 수 있는 문화 일정을 탐색해보세요.</p>
-                </section>
-
-                {/* 에러 화면 */}
-                {isError && (
-                    <div className="p-8 text-center bg-white dark:bg-slate-800 rounded-2xl border border-rose-100 dark:border-rose-900/40 shadow-sm transition-colors">
-                        <p className="text-rose-500 dark:text-rose-400 font-semibold text-sm">문화 행사 정보를 불러오지 못했습니다.</p>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="mt-3 px-4 py-1.5 text-xs font-bold bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg transition-colors">
-                            다시 시도
-                        </button>
+        <main id="main-content" className="mx-auto max-w-7xl px-4 pb-16 pt-8 md:pt-10">
+            {/* 편성표 머리: 제목과 지역, 그 아래 한 주 날짜 띠 */}
+            <section aria-labelledby="schedule-heading" className="space-y-5 border-b border-line pb-8">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <h1 id="schedule-heading" className="font-display text-[1.75rem] leading-tight text-ink md:text-[2rem]">
+                            {regionLabel} 문화 일정
+                        </h1>
+                        {/* 빌드 때 만든 HTML의 날짜와 방문 날짜가 다를 수 있어 hydration 경고를 끔 */}
+                        <p className="mt-1 text-[15px] text-ink-soft tabular-nums" suppressHydrationWarning>
+                            {formatReadableRange(startDate, endDate)}에 열리는 영화, 공연, 지역 행사, 전시
+                        </p>
                     </div>
-                )}
+                    <label className="flex items-center gap-2 text-sm font-medium text-ink-soft">
+                        지역
+                        <select
+                            name="region"
+                            autoComplete="off"
+                            value={selectedRegion}
+                            onChange={(event) => setSelectedRegion(event.target.value)}
+                            className="h-10 cursor-pointer rounded-lg border border-line bg-surface px-3 text-sm font-medium text-ink"
+                        >
+                            {REGIONS.map((region) => (
+                                <option key={region.value} value={region.value}>{region.label}</option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
+                <WeekStrip />
+            </section>
 
-                {/* 카테고리별 섹션 */}
-                {CATEGORIES.map((category) => {
-                    // 객체 구조 데이터에서 해당 카테고리 배열 추출
-                    const categoryItems = data?.[category.key] || [];
-                    return (
-                        <section key={category.key} className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 transition-colors">{category.title}</h2>
-                                <a href={category.href} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
-                                    전체보기 &rarr;
-                                </a>
-                            </div>
+            {/* 에러 화면 */}
+            {isError && (
+                <div role="alert" className="mt-8 rounded-xl border border-line bg-surface p-8 text-center">
+                    <p className="text-sm font-semibold text-danger">문화 행사 정보를 불러오지 못했습니다.</p>
+                    <Button type="button" variant="secondary" className="mt-4" onClick={() => refetch()}>
+                        다시 시도
+                    </Button>
+                </div>
+            )}
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                {isLoading ? (
-                                    Array.from({ length: 5 }).map((_, idx) => <SkeletonCard key={idx} />)
-                                ) : categoryItems.length > 0 ? (
-                                    categoryItems.map((item) => <CultureCard key={item.id} item={item} />)
-                                ) : (
-                                    <div className="col-span-full py-8 text-center text-xs text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                                        등록된 일정이 없습니다.
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    );
-                })}
-            </main>
-        </div>
+            {/* 카테고리별 줄: 왼쪽 행 제목, 오른쪽 카드 (모바일은 카드가 가로로 넘어감) */}
+            {visibleCategories.map((category) => {
+                // 객체 구조 데이터에서 해당 카테고리 배열 추출
+                const categoryItems = data?.[category.key] || [];
+                const headingId = `home-${category.key}`;
+                return (
+                    <section
+                        key={category.key}
+                        aria-labelledby={headingId}
+                        aria-busy={isLoading}
+                        className="grid gap-4 border-b border-line py-8 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-8"
+                    >
+                        <div className="flex items-center justify-between gap-4 lg:flex-col lg:items-start lg:justify-start lg:gap-3">
+                            {/* 편성표의 줄 색처럼 제목 왼쪽에 카테고리 색 세로선 */}
+                            <h2 id={headingId} className={`border-l-[3px] pl-3 text-xl font-bold leading-tight text-ink ${category.bar}`}>
+                                {category.homeTitle}
+                            </h2>
+                            <Link
+                                href={category.href}
+                                className="shrink-0 text-sm font-semibold text-accent underline-offset-4 hover:underline"
+                            >
+                                {category.label} 전체보기
+                            </Link>
+                        </div>
+
+                        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 *:w-[44%] *:shrink-0 *:snap-start sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 sm:*:w-auto md:grid-cols-4 xl:grid-cols-5">
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, idx) => <SkeletonCard key={idx} />)
+                            ) : categoryItems.length > 0 ? (
+                                categoryItems.map((item) => <CultureCard key={item.id} item={item} />)
+                            ) : (
+                                <p className="!w-full rounded-xl border border-dashed border-line-strong py-10 text-center text-sm text-ink-faint sm:col-span-full">
+                                    이 기간에 등록된 일정이 없습니다.
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                );
+            })}
+        </main>
     );
 }

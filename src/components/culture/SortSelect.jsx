@@ -18,12 +18,14 @@ export default function SortSelect({ value, onChange, category }) {
       ];
 
   return (
-    <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+    <label className="flex items-center gap-2 text-sm font-medium text-ink-soft">
       <span>정렬</span>
       <select
+        name="sort"
+        autoComplete="off"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+        className="h-10 cursor-pointer rounded-lg border border-line bg-surface px-3 text-sm font-medium text-ink"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>

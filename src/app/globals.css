@@ -1,188 +1,259 @@
-@import "tailwindcss"; 
+@import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css");
+@import "tailwindcss";
 
-/* HTML 태그에 .dark 클래스가 들어갈 때 dark: 수식어가 작동하도록 설정 */
-@custom-variant dark (&:where(.dark, .dark *)); 
+/* html에 data-theme="dark"가 붙을 때 dark: 수식어가 작동하도록 설정 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ==========================================================================
- 1. Theme Color Variables (컬쳐맵 디자인 시스템)
+ 1. 디자인 토큰 (컬쳐맵 디자인 시스템)
+    방향: 공연 전단지 게시판 + 지하철 노선도. 차가운 회백색 바탕에 지도 파랑 하나,
+    카테고리는 서울 지하철 노선색(흰 글자 대비 4.5:1 이상으로 조정)으로 구분합니다.
+    색은 아래 변수로만 바꾸고, 컴포넌트에서는 bg-paper / text-ink / bg-accent 등 토큰 클래스를 씁니다.
  ========================================================================== */
 
-/* ☀️ 라이트 모드 기본값 */
-:root { 
- --background: #f8fafc; 
- /* slate-50 */
- --foreground: #0f172a; 
- /* slate-900 */
+/* ☀️ 라이트 모드 */
+:root {
+  --paper: #f2f3f5;        /* 페이지 바탕 */
+  --surface: #fcfcfe;      /* 카드·패널 (순백 대신 파랑 쪽으로 아주 살짝) */
+  --sunken: #e8eaee;       /* 입력창·보조 배경 */
+  --ink: #16181d;          /* 본문 글자 (paper 대비 16:1) */
+  --ink-soft: #454a55;     /* 보조 글자 (8:1) */
+  --ink-faint: #5f6570;    /* 메타 정보 (5.3:1) */
+  --line: #dfe2e7;
+  --line-strong: #c3c8d0;
 
- --card-bg: #ffffff; 
- /* 카드 배경 */
- --card-border: #f1f5f9; 
- /* slate-100 */
+  --accent: #2346d3;       /* 지도 파랑: 링크·선택 상태·주요 버튼 */
+  --accent-strong: #1a37ab;
+  --accent-soft: #e4e9fb;
+  --on-accent: #f7f8ff;
+  --danger: #b42318;
 
- --muted-text: #64748b; 
- /* slate-500 */
- --sub-bg: #f1f5f9; 
- /* slate-100 */
+  /* 영화 커버·찜 하트처럼 모드와 관계없이 고정인 색 */
+  --cover: #16181d;
+  --cover-accent: #8fa7ff;
+  --heart: #f0445a;
 
- /* 브랜드 시그니처 컬러 */
- --primary: #4f46e5; 
- /* indigo-600 */
- --primary-hover: #4338ca; 
- /* indigo-700 */
- --primary-light: #e0e7ff; 
- /* indigo-100 */
- --accent: #f43f5e; 
- /* rose-500 */
+  /* 카테고리 노선색 (배지·지도 마커 공통, 흰 글자를 얹음) */
+  --cat-movie: #3a3f4b;
+  --cat-concert: #00843d;
+  --cat-musical: #8b4fa8;
+  --cat-festival: #b35400;
+  --cat-exhibition: #0072b0;
+}
 
- /* 글래스모피즘 */
- --glass-bg: rgba(255, 255, 255, 0.85); 
- --glass-border: rgba(241, 245, 249, 0.8); 
- } 
+/* 🌙 다크 모드 (html[data-theme="dark"] 적용 시) */
+:root[data-theme="dark"] {
+  --paper: #0e1014;
+  --surface: #171a20;
+  --sunken: #22262e;
+  --ink: #eceef2;
+  --ink-soft: #b5bac4;
+  --ink-faint: #9298a3;
+  --line: #2a2f38;
+  --line-strong: #3d434e;
 
-/* 🌙 다크 모드 (`html.dark` 적용 시) */
-.dark { 
- --background: #0f172a; 
- /* slate-900 */
- --foreground: #f8fafc; 
- /* slate-50 */
+  --accent: #8fa7ff;
+  --accent-strong: #b0c1ff;
+  --accent-soft: rgba(143, 167, 255, 0.14);
+  --on-accent: #16181d;    /* 밝은 파랑 위에는 흰 글자 대비가 부족해 먹색 사용 */
+  --danger: #f97066;
 
- --card-bg: #1e293b; 
- /* slate-800 */
- --card-border: #334155; 
- /* slate-700 */
+  /* 노선색은 흰 글자 대비를 위해 그대로 두고, 바탕과 섞이는 영화색만 밝힘 */
+  --cat-movie: #5b6271;
+}
 
- --muted-text: #94a3b8; 
- /* slate-400 */
- --sub-bg: #334155; 
- /* slate-700 */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-cover: var(--cover);
+  --color-cover-accent: var(--cover-accent);
+  --color-heart: var(--heart);
+  --color-cat-movie: var(--cat-movie);
+  --color-cat-concert: var(--cat-concert);
+  --color-cat-musical: var(--cat-musical);
+  --color-cat-festival: var(--cat-festival);
+  --color-cat-exhibition: var(--cat-exhibition);
 
- /* 다크모드 전용 브랜드 컬러 */
- --primary: #6366f1; 
- /* indigo-500 */
- --primary-hover: #818cf8; 
- /* indigo-400 */
- --primary-light: rgba(99, 102, 241, 0.2); 
- --accent: #fb7185; 
- /* rose-400 */
+  /* 서체: Wanted Sans 한 가족(가변 400~1000). 제목은 같은 서체를 굵고 좁게 써서 위계를 만듦 */
+  --font-sans: "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-display: "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
 
- /* 다크모드 글래스모피즘 */
- --glass-bg: rgba(15, 23, 42, 0.85); 
- --glass-border: rgba(51, 65, 85, 0.8); 
- } 
+  /* 모션 곡선: 기본 UI는 빠르게 시작해 부드럽게 멈추는 ease-out, 드로어는 iOS 시트 곡선 */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-slide-in-right: slide-in-right 220ms var(--ease-out);
+  --animate-rise-in: rise-in 260ms var(--ease-out);
+  --animate-heart: heart 280ms var(--ease-out);
+
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(12px); }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(12px); }
+  }
+  @keyframes heart {
+    40% { transform: scale(1.3); }
+  }
+}
 
 /* ==========================================================================
  2. Global Base Styles
  ========================================================================== */
 
+/* 기본 테두리 색. base 층에 두어야 border-ink 같은 유틸리티 클래스가 이 값을 덮어쓸 수 있음 */
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--line);
+  }
+}
 
-* { 
- border-color: var(--card-border); 
- } 
+html {
+  color-scheme: light;
+  overflow-x: clip;
+  /* 키보드로 이동한 요소나 앵커가 고정 헤더(64px)에 가려지지 않게 */
+  scroll-padding-top: 5rem;
+  /* 더블탭 확대 지연 제거, 탭 하이라이트 대신 각 컨트롤의 :active 상태 사용 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 
-/* 기본 라이트모드 color-scheme 지정 */
-html { 
- color-scheme: light; 
- scroll-behavior: smooth; 
- } 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
 
-/* 🌙 html에 .dark 클래스가 붙었을 때 브라우저 기본 UI(달력 팝업 등)도 다크모드로 전환 */
-html.dark { 
- color-scheme: dark; 
- } 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
 
-body { 
- background-color: var(--background); 
- color: var(--foreground); 
- font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Noto Sans KR', sans-serif; 
- transition: background-color 0.25s ease, color 0.25s ease; 
- -webkit-font-smoothing: antialiased; 
- -moz-osx-font-smoothing: grayscale; 
- } 
+body {
+  overflow-x: clip;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* 한국어를 어절 단위로 줄바꿈 ("오/른쪽"처럼 단어 중간에서 끊기지 않게) */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 키보드 포커스는 모든 요소에서 같은 모양으로 보이게 통일 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 제목·순위 숫자: 같은 서체를 굵게, 자간을 좁혀 포스터처럼 (utilities 층의 font-black 등이 덮어쓸 수 있게 base 층) */
+@layer base {
+  .font-display {
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+}
+
+h1, h2, h3 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+/* 동작 줄이기: 이동·확대는 없애고, 무엇이 나타났는지 알려주는 짧은 페이드와 색 변화만 남김 */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in-right,
+  .animate-rise-in {
+    animation: fade-in 150ms ease !important;
+  }
+
+  .animate-heart {
+    animation: none !important;
+  }
+
+  *, *::before, *::after {
+    transition-property: color, background-color, border-color, opacity !important;
+  }
+}
 
 /* ==========================================================================
  3. Custom Scrollbar
  ========================================================================== */
 
-::-webkit-scrollbar { 
- width: 8px; 
- height: 8px; 
- } 
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-::-webkit-scrollbar-track { 
- background: transparent; 
- } 
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-::-webkit-scrollbar-thumb { 
- background: #cbd5e1; 
- border-radius: 9999px; 
- } 
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 9999px;
+}
 
-.dark ::-webkit-scrollbar-thumb { 
- background: #475569; 
- } 
-
-::-webkit-scrollbar-thumb:hover { 
- background: #94a3b8; 
- } 
-
-.dark ::-webkit-scrollbar-thumb:hover { 
- background: #64748b; 
- } 
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
 
 /* ==========================================================================
  4. Selection & Utility Helpers
  ========================================================================== */
 
-::selection { 
- background-color: #6366f1; 
- color: #ffffff; 
- } 
+::selection {
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
 
 /* 스크롤바 숨기기 클래스 */
-.no-scrollbar::-webkit-scrollbar { 
- display: none; 
- } 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 
-.no-scrollbar { 
- -ms-overflow-style: none; 
- scrollbar-width: none; 
- } 
-
-/* 글래스 패널 유틸리티 */
-.glass-panel { 
- background-color: var(--glass-bg); 
- backdrop-filter: blur(12px); 
- -webkit-backdrop-filter: blur(12px); 
- border-color: var(--glass-border); 
- } 
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* ==========================================================================
- 5. Input Date Calendar Icon Customization (새로 추가된 영역)
+ 5. Input Date Calendar Icon Customization
  ========================================================================== */
 
-/* 다크모드일 때 date input의 color-scheme 보장 */
-.dark input[type="date"] { 
- color-scheme: dark; 
- } 
+/* input date 달력 피커 아이콘을 포인트 색 벡터 아이콘으로 교체 */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px;
+  background-color: var(--accent);
+  -webkit-mask-image: url('data:image/svg+xml; utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>');
+  mask-image: url('data:image/svg+xml; utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  transition: opacity 150ms var(--ease-out);
+}
 
-/* input date 달력 피커 아이콘 스타일 커스텀 */
-input[type="date"]::-webkit-calendar-picker-indicator { 
- cursor: pointer; 
- border-radius: 4px; 
- padding: 2px; 
-
- /* 아이콘 색상을 브랜드 인디고 컬러(--primary)로 지정 */
- background-color: var(--primary); 
-
- /* SVG 마스크를 이용해 깨끗한 벡터 아이콘 형태 유지 */
- -webkit-mask-image: url('data:image/svg+xml; utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'); 
- mask-image: url('data:image/svg+xml; utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'); 
- -webkit-mask-repeat: no-repeat; 
- mask-repeat: no-repeat; 
- -webkit-mask-position: center; 
- mask-position: center; 
- -webkit-mask-size: contain; 
- mask-size: contain; 
-
- transition: opacity 0.2s ease, transform 0.1s ease; 
- } 
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.75;
+}

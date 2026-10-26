@@ -33,14 +33,6 @@ export default function Header() {
         window.requestAnimationFrame(() => document.getElementById("mobile-menu-toggle")?.focus());
     };
 
-    // 마운트 시 저장된 테마 또는 시스템 설정 불러오기
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
-        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-        document.documentElement.classList.toggle("dark", savedTheme === "dark" || (!savedTheme && systemDark));
-    }, []);
-
     useEffect(() => {
         if (!mobileMenuOpen) return undefined;
 
@@ -60,76 +52,70 @@ export default function Header() {
 
     // 다크모드 토글 함수
     const toggleDarkMode = () => {
-        const nextState = !document.documentElement.classList.contains("dark");
-        document.documentElement.classList.toggle("dark", nextState);
-        localStorage.setItem("theme", nextState ? "dark" : "light");
+        const nextState = document.documentElement.dataset.theme !== "dark";
+        document.documentElement.dataset.theme = nextState ? "dark" : "light";
+        try {
+            localStorage.setItem("theme", nextState ? "dark" : "light");
+        } catch {
+            // 저장소를 쓸 수 없는 환경에서도 현재 화면 테마는 바뀌도록 무시
+        }
     };
 
     return (
         <>
-        <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-200">
+        <header className="sticky top-0 z-50 border-b border-line bg-paper">
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
                 {/* 로고 영역 */}
-                <Link href="/" aria-label="컬쳐맵 홈" className="inline-flex items-center group rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600">
-                    <svg width="170" height="38" viewBox="0 0 220 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-transform duration-200 group-hover:scale-[1.02]">
-                        <defs>
-                            <linearGradient id="headerLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#4F46E5" />
-                                <stop offset="100%" stopColor="#7C3AED" />
-                            </linearGradient>
-                        </defs>
-
+                <Link href="/" aria-label="컬쳐맵 홈" className="inline-flex items-center rounded focus-visible:outline-offset-4">
+                    <svg width="170" height="38" viewBox="0 0 220 50" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <g transform="translate(2, 3)">
                             <path
                                 d="M22 2C12.059 2 4 10.059 4 20C4 32.5 20.2 43.1 20.9 43.6C21.2 43.8 21.6 44 22 44C22.4 44 22.8 43.8 23.1 43.6C23.8 43.1 40 32.5 40 20C40 10.059 31.941 2 22 2Z"
-                                fill="url(#headerLogoGrad)"
+                                className="fill-accent"
                             />
-                            <rect x="13" y="13" width="18" height="13" rx="2.5" fill="#FFFFFF" />
-                            <circle cx="13" cy="19.5" r="2" fill="url(#headerLogoGrad)" />
-                            <circle cx="31" cy="19.5" r="2" fill="url(#headerLogoGrad)" />
-                            <path d="M22 15.2L22.9 17.2L25.1 17.4L23.5 18.9L23.9 21.1L22 20L20.1 21.1L20.5 18.9L18.9 17.4L21.1 17.2L22 15.2Z" fill="url(#headerLogoGrad)" />
+                            <rect x="13" y="13" width="18" height="13" rx="2.5" className="fill-paper" />
+                            <circle cx="13" cy="19.5" r="2" className="fill-accent" />
+                            <circle cx="31" cy="19.5" r="2" className="fill-accent" />
+                            <path d="M22 15.2L22.9 17.2L25.1 17.4L23.5 18.9L23.9 21.1L22 20L20.1 21.1L20.5 18.9L18.9 17.4L21.1 17.2L22 15.2Z" className="fill-accent" />
                         </g>
 
                         <text
                             x="54"
                             y="27"
-                            fontFamily="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif"
+                            fontSize="22"
                             fontWeight="800"
-                            fontSize="20"
-                            className="fill-slate-900 dark:fill-slate-100 transition-colors"
+                            className="fill-ink font-display"
                             letterSpacing="-0.5px">
                             컬쳐맵
                         </text>
                         <text
                             x="54.5"
                             y="39"
-                            fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif"
-                            fontWeight="700"
+                            fontWeight="600"
                             fontSize="8.5"
-                            className="fill-slate-500 dark:fill-slate-400 transition-colors"
+                            className="fill-ink-faint"
                             letterSpacing="2.2px">
                             CULTURE MAP
                         </text>
-                        <circle cx="123" cy="24" r="2.8" fill="#F43F5E" />
                     </svg>
                 </Link>
 
                 {/* GNV 영역 */}
                 <Navbar />
 
-                <div className="flex">
-                {/* 우측 유틸리티 영역 (날짜 피커, 다크모드 버튼, 지도 탐색) */}
-                    <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1">
+                {/* 우측 유틸리티 영역 (다크모드 버튼, 지도 탐색) */}
+                    <div className="flex items-center gap-2">
                         {/* 다크모드 토글 버튼 */}
                         <button
                             type="button"
                             onClick={toggleDarkMode}
                             aria-label="다크모드 전환"
-                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                            <svg className="h-4 w-4 text-slate-600 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            className="grid h-10 w-10 cursor-pointer place-items-center rounded-lg text-ink-soft transition-[color,background-color,scale] duration-150 ease-out hover:bg-sunken hover:text-ink active:scale-[0.96]">
+                            <svg aria-hidden="true" className="h-[18px] w-[18px] dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                             </svg>
-                            <svg className="hidden h-4 w-4 text-amber-400 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg aria-hidden="true" className="hidden h-[18px] w-[18px] dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         </button>
@@ -137,10 +123,9 @@ export default function Header() {
                         {/* 지도 탐색 링크 */}
                         <Link
                             href="/map"
-                            className="flex items-center gap-1.5 rounded-full bg-indigo-600 p-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:px-3.5 sm:p-2">
-                            <div>
-                                <span className="hidden sm:inline-block">🗺️</span> 지도 <span className="hidden sm:inline-block">탐색</span>
-                            </div>
+                            aria-current={pathname === "/map" ? "page" : undefined}
+                            className="inline-flex h-10 items-center rounded-full bg-accent px-4 text-sm font-semibold text-on-accent transition-[background-color,scale] duration-150 ease-out hover:bg-accent-strong active:scale-[0.97]">
+                            지도<span className="hidden sm:inline">&nbsp;탐색</span>
                         </Link>
                     </div>
                     <div className="lg:hidden inline-flex">
@@ -155,14 +140,14 @@ export default function Header() {
                             aria-expanded={mobileMenuOpen}
                             aria-controls="mobile-navigation"
                             aria-haspopup="dialog"
-                            className="relative z-50 p-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors cursor-pointer">
+                            className="relative z-50 grid h-10 w-10 cursor-pointer place-items-center rounded-lg text-ink transition-colors duration-150 hover:bg-sunken">
                             <div className="w-5 h-4 relative flex flex-col justify-between items-center">
                                 {/* 상단 선 */}
-                                <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center ${mobileMenuOpen ? "rotate-45 translate-y-1.75" : ""}`} />
+                                <span className={`w-full h-0.5 bg-current rounded-full transition-[rotate,translate] duration-200 ease-out origin-center ${mobileMenuOpen ? "rotate-45 translate-y-1.75" : ""}`} />
                                 {/* 중단 선 */}
-                                <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-200 ease-in-out ${mobileMenuOpen ? "opacity-0 scale-x-0" : "opacity-100"}`} />
+                                <span className={`w-full h-0.5 bg-current rounded-full transition-[opacity,scale] duration-150 ease-out ${mobileMenuOpen ? "opacity-0 scale-x-0" : "opacity-100"}`} />
                                 {/* 하단 선 */}
-                                <span className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-1.75" : ""}`} />
+                                <span className={`w-full h-0.5 bg-current rounded-full transition-[rotate,translate] duration-200 ease-out origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-1.75" : ""}`} />
                             </div>
                         </button>
 
@@ -172,8 +157,8 @@ export default function Header() {
                             aria-label="모바일 메뉴 닫기"
                             tabIndex={mobileMenuOpen ? 0 : -1}
                             onClick={closeMobileMenu}
-                            className={`fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs transition-opacity duration-300 ${
-                                mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                            className={`fixed inset-0 z-40 bg-black/40 transition-opacity ease-out ${
+                                mobileMenuOpen ? "opacity-100 pointer-events-auto duration-300" : "opacity-0 pointer-events-none duration-200"
                             }`}
                         />
 
@@ -186,12 +171,13 @@ export default function Header() {
                             aria-hidden={!mobileMenuOpen}
                             inert={!mobileMenuOpen}
                             onKeyDown={trapDialogFocus}
-                            className={`fixed top-0 right-0 z-40 w-72 bg-white dark:bg-slate-900 border-l border-b border-slate-100 dark:border-slate-800 shadow-2xl p-6 pt-15 flex flex-col justify-between transform transition-transform duration-300 ease-out ${
-                                mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+                            className={`fixed inset-y-0 right-0 z-40 flex w-72 flex-col justify-between border-l border-line-strong bg-surface p-6 pt-20 shadow-md overscroll-contain transition-transform ${
+                                // 열 때는 시트 곡선으로 400ms, 닫을 때는 빠르게 200ms (닫기가 열기보다 빨라야 반응이 즉각적으로 느껴짐)
+                                mobileMenuOpen ? "translate-x-0 duration-[400ms] ease-drawer" : "translate-x-full duration-200 ease-out"
                             }`}>
                             {/* 메뉴 목록 */}
                             <nav className="space-y-1">
-                                <p className="px-0 pb-2 text-s font-bold text-slate-900 dark:text-slate-50 uppercase tracking-wider">카테고리 메뉴</p>
+                                <p className="px-3 pb-2 text-xs font-semibold text-ink-faint">카테고리</p>
                                 {NAV_ITEMS.map((item) => {
                                     const isActive = pathname === item.href;
                                     return (
@@ -199,10 +185,11 @@ export default function Header() {
                                             key={item.href}
                                             onClick={closeMobileMenu}
                                             href={item.href}
-                                            className={`block px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                                            aria-current={isActive ? "page" : undefined}
+                                            className={`block rounded-lg px-3 py-2.5 text-[15px] font-semibold transition-colors duration-150 ${
                                                 isActive
-                                                    ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
-                                                    : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                    ? "bg-accent-soft text-accent"
+                                                    : "text-ink hover:bg-sunken"
                                             }`}>
                                             {item.label}
                                         </Link>
@@ -211,12 +198,12 @@ export default function Header() {
                             </nav>
 
                             {/* 모바일 지도 바로가기 */}
-                            <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <div className="border-t border-line pt-6">
                                 <Link
                                     href="/map"
-                                    className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all active:scale-98">
-                                    <span>🗺️</span>
-                                    <span>지도 탐색 서비스 열기</span>
+                                    onClick={closeMobileMenu}
+                                    className="flex h-11 w-full items-center justify-center rounded-lg bg-accent text-sm font-semibold text-on-accent transition-[background-color,scale] duration-150 ease-out hover:bg-accent-strong active:scale-[0.98]">
+                                    지도에서 찾아보기
                                 </Link>
                             </div>
                         </aside>
