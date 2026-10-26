@@ -46,10 +46,10 @@ function normalizeMovie(movie, type, showRange) {
 }
 
 export async function GET(request) {
-  const apiKey = process.env.KOBIS_API_KEY ?? process.env.KOBIS_KEY;
+  const apiKey = process.env.KOBIS_KEY ?? process.env.KOBIS_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "KOBIS_API_KEY 환경변수를 설정해주세요." },
+      { error: "KOBIS_KEY 환경변수를 설정해주세요." },
       { status: 500 }
     );
   }
@@ -59,6 +59,11 @@ export async function GET(request) {
   const type = searchParams.get("type") === "weekend" ? "weekend" : "daily";
   if (!/^\d{8}$/.test(requestedDate)) {
     return NextResponse.json({ error: "조회 날짜 형식이 올바르지 않습니다." }, { status: 400 });
+  }
+
+  // 미래 날짜에는 박스오피스 집계가 없으므로 KOBIS를 부르지 않고 빈 목록을 돌려줌
+  if (requestedDate > getKoreanToday()) {
+    return NextResponse.json({ items: [], future: true });
   }
 
   const targetDate = type === "weekend" ? getLatestSunday(requestedDate) : requestedDate;

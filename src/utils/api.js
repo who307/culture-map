@@ -1,17 +1,11 @@
-import { isEventInDateRange } from "@/utils/date";
+import { getTodayDate, isEventInDateRange, isFutureDate } from "@/utils/date";
+import { CATEGORIES } from "@/utils/categories";
+import { hasCoordinates } from "@/utils/location";
 
 const BASE_URL = "http://localhost:4000";
 
-export const CULTURE_CATEGORIES = [
-  { key: "movie", endpoint: "movies", label: "영화", path: "/movies" },
-  { key: "concert", endpoint: "concerts", label: "콘서트", path: "/concerts" },
-  { key: "musical", endpoint: "musicals", label: "뮤지컬", path: "/musicals" },
-  { key: "festival", endpoint: "festivals", label: "지역 행사", path: "/festivals" },
-  { key: "exhibition", endpoint: "exhibitions", label: "전시회", path: "/exhibitions" },
-];
-
 function getEndpoint(category) {
-  const match = CULTURE_CATEGORIES.find((item) => item.key === category || item.endpoint === category);
+  const match = CATEGORIES.find((item) => item.key === category || item.endpoint === category);
   if (!match) throw new Error(`지원하지 않는 문화 카테고리입니다: ${category}`);
   return match.endpoint;
 }
@@ -30,8 +24,11 @@ export async function fetchCategoryCultures(category, options = {}) {
   const endpoint = getEndpoint(category);
 
   if (endpoint === "movies") {
+    // 박스오피스는 지난 날짜의 집계만 있음: 기간 전체가 미래면 요청하지 않고,
+    // 기간이 오늘을 지나 미래까지 이어지면 오늘까지의 최신 집계를 보여줌
+    if (isFutureDate(startDate)) return [];
     const params = new URLSearchParams({
-      targetDt: endDate,
+      targetDt: isFutureDate(endDate) ? getTodayDate() : endDate,
       type: boxOfficeType,
     });
     const response = await fetch(`/api/box-office?${params}`);
@@ -116,7 +113,7 @@ export async function fetchCategoryCultures(category, options = {}) {
 
 export async function fetchHomeCultures(startDate, endDate = startDate) {
   const results = await Promise.allSettled(
-    CULTURE_CATEGORIES.map(({ endpoint }) => fetchCategoryCultures(endpoint, { limit: 5, startDate, endDate }))
+    CATEGORIES.map(({ endpoint }) => fetchCategoryCultures(endpoint, { limit: 5, startDate, endDate }))
   );
 
   if (results.every((result) => result.status === "rejected")) {
@@ -124,7 +121,7 @@ export async function fetchHomeCultures(startDate, endDate = startDate) {
   }
 
   return Object.fromEntries(
-    CULTURE_CATEGORIES.map(({ key }, index) => [
+    CATEGORIES.map(({ key }, index) => [
       key,
       results[index].status === "fulfilled" ? results[index].value : [],
     ])
@@ -132,7 +129,7 @@ export async function fetchHomeCultures(startDate, endDate = startDate) {
 }
 
 export async function fetchMapCultures(options = {}) {
-  const mapCategories = CULTURE_CATEGORIES.filter(({ key }) => key !== "movie");
+  const mapCategories = CATEGORIES.filter(({ key }) => key !== "movie");
   const results = await Promise.allSettled(
     mapCategories.map(({ key }) => fetchCategoryCultures(key, { ...options, includeCoordinates: true }))
   );
@@ -145,13 +142,7 @@ export async function fetchMapCultures(options = {}) {
   const uniqueItems = [...new Map(items.map((item) => [item.id, item])).values()];
 
   return uniqueItems
-    .filter((item) => (item.latitude !== null
-      && item.latitude !== undefined
-      && item.longitude !== null
-      && item.longitude !== undefined
-      && Number.isFinite(Number(item.latitude))
-      && Number.isFinite(Number(item.longitude))
-    ) || Boolean(item.address || item.locationName));
+    .filter((item) => hasCoordinates(item) || Boolean(item.address || item.locationName));
 }
 
 export async function fetchMovieTheaters(options = {}) {
