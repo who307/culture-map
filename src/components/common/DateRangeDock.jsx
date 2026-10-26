@@ -87,7 +87,6 @@ export default function DateRangeDock() {
                   name="startDate"
                   type="date"
                   autoComplete="off"
-                  suppressHydrationWarning
                   value={startDate}
                   max={endDate}
                   onChange={(event) => setStartDate(event.target.value)}
@@ -101,7 +100,6 @@ export default function DateRangeDock() {
                   name="endDate"
                   type="date"
                   autoComplete="off"
-                  suppressHydrationWarning
                   value={endDate}
                   min={startDate}
                   onChange={(event) => setEndDate(event.target.value)}

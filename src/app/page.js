@@ -11,11 +11,13 @@ import { formatReadableRange } from "@/utils/formatters";
 import { CATEGORIES } from "@/utils/categories";
 import { REGIONS } from "@/utils/regions";
 import { isFutureDate } from "@/utils/date";
+import { useIsClient } from "@/hooks/useIsClient";
 
 export default function HomePage() {
     const { startDate, endDate, selectedRegion, setSelectedRegion } = useFilterStore();
     const { data, isLoading, isError, refetch } = useCultureData("home");
     const regionLabel = selectedRegion === "ALL" ? "전국" : selectedRegion;
+    const isClient = useIsClient();
     // 박스오피스는 지난 날짜의 집계만 있어 기간 전체가 미래면 영화 줄을 숨김
     const visibleCategories = isFutureDate(startDate)
         ? CATEGORIES.filter((category) => category.key !== "movie")
@@ -30,9 +32,9 @@ export default function HomePage() {
                         <h1 id="schedule-heading" className="font-display text-[1.75rem] leading-tight text-ink md:text-[2rem]">
                             {regionLabel} 문화 일정
                         </h1>
-                        {/* 빌드 때 만든 HTML의 날짜와 방문 날짜가 다를 수 있어 hydration 경고를 끔 */}
-                        <p className="mt-1 text-[15px] text-ink-soft tabular-nums" suppressHydrationWarning>
-                            {formatReadableRange(startDate, endDate)}에 열리는 영화, 공연, 지역 행사, 전시
+                        {/* 빌드 때 만든 HTML에는 빌드한 날의 날짜가 들어가므로 날짜는 브라우저에서만 표시 */}
+                        <p className="mt-1 text-[15px] text-ink-soft tabular-nums">
+                            {isClient ? formatReadableRange(startDate, endDate) : "선택한 기간"}에 열리는 영화, 공연, 지역 행사, 전시
                         </p>
                     </div>
                     <label className="flex items-center gap-2 text-sm font-medium text-ink-soft">

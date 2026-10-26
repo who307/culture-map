@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import { useFilterStore } from "@/store/useFilterStore";
 import { addDays, getTodayDate, getWeekday, startOfWeek } from "@/utils/date";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const dayLabelFormat = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" });
-
-const subscribeNothing = () => () => {};
 
 function formatDayLabel(value) {
   const [year, month, day] = value.split("-").map(Number);
@@ -20,8 +19,8 @@ export default function WeekStrip() {
   const endDate = useFilterStore((state) => state.endDate);
   const setStartDate = useFilterStore((state) => state.setStartDate);
   const setEndDate = useFilterStore((state) => state.setEndDate);
-  // 페이지가 빌드 때 미리 만들어지므로, 날짜에 따라 달라지는 띠는 브라우저에서만 그림
-  const isClient = useSyncExternalStore(subscribeNothing, () => true, () => false);
+  // 날짜에 따라 달라지는 띠는 브라우저에서만 그림
+  const isClient = useIsClient();
   const [weekOffset, setWeekOffset] = useState({ anchor: null, weeks: 0 });
 
   const anchor = startOfWeek(startDate);

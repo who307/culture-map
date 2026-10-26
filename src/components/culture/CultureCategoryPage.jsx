@@ -6,6 +6,7 @@ import SkeletonCard from "@/components/common/SkeletonCard";
 import CultureList from "@/components/culture/CultureList";
 import SortSelect from "@/components/culture/SortSelect";
 import { useCultureData } from "@/hooks/useCultureData";
+import { useIsClient } from "@/hooks/useIsClient";
 import { useFilterStore } from "@/store/useFilterStore";
 import { formatCategory, formatReadableRange, formatShowRange } from "@/utils/formatters";
 import { getTodayDate, isFutureDate } from "@/utils/date";
@@ -22,6 +23,7 @@ export default function CultureCategoryPage({ category }) {
   const setStartDate = useFilterStore((state) => state.setStartDate);
   const setEndDate = useFilterStore((state) => state.setEndDate);
   const isFutureBoxOffice = category === "movie" && isFutureDate(startDate);
+  const isClient = useIsClient();
   const paginationContext = `${category}:${startDate}:${endDate}:${sort}:${boxOfficeType}`;
   const [pagination, setPagination] = useState({ context: null, page: 1 });
   const currentPage = pagination.context === paginationContext ? pagination.page : 1;
@@ -44,8 +46,9 @@ export default function CultureCategoryPage({ category }) {
             <h1 className={`border-l-4 pl-3.5 font-display text-[1.75rem] leading-tight text-ink md:text-[2rem] ${CATEGORY_BY_KEY[category]?.bar ?? "border-line-strong"}`}>
               {formatCategory(category)}
             </h1>
-            <p className="mt-2 text-[15px] text-ink-soft tabular-nums" suppressHydrationWarning>
-              {category === "movie" && boxOfficeRange ? `${boxOfficeRange} 집계` : formatReadableRange(startDate, endDate)}
+            {/* 빌드 시점 날짜가 남지 않도록 날짜는 브라우저에서만 표시 */}
+            <p className="mt-2 min-h-[1.5em] text-[15px] text-ink-soft tabular-nums">
+              {!isClient ? "" : category === "movie" && boxOfficeRange ? `${boxOfficeRange} 집계` : formatReadableRange(startDate, endDate)}
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
