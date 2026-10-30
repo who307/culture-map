@@ -97,6 +97,21 @@ function getBuildingAddress(row) {
     .trim();
 }
 
+// 지도에는 주요 멀티플렉스만 표시. 관 이름에만 브랜드가 드러나는 곳(코엑스 "MEGA｜MX4D관" 등)도 있어
+// 극장에 속한 모든 상영관 이름을 함께 검사
+const THEATER_BRANDS = [
+  { label: "CGV", pattern: /cgv|씨지브이/i },
+  { label: "롯데시네마", pattern: /롯데시네마|롯데컬처웍스/ },
+  // 돌비 시네마·부티크는 국내에서 메가박스만 쓰는 상영관 이름
+  { label: "메가박스", pattern: /메가박스|megabox|MX4D|MEGA｜|돌비\s*시네마|dolby\s*cinema|부티크/i },
+  { label: "씨네Q", pattern: /씨네큐|씨네q|cine\s*q/i },
+];
+
+function findTheaterBrand(rows) {
+  const names = rows.map((row) => row.BPLC_NM ?? "").join(" | ");
+  return THEATER_BRANDS.find(({ pattern }) => pattern.test(names)) ?? null;
+}
+
 function pickTheaterName(rows) {
   const counts = new Map();
   for (const row of rows) {
@@ -108,10 +123,40 @@ function pickTheaterName(rows) {
   return best?.[0] ?? String(rows[0].BPLC_NM ?? "").trim();
 }
 
-function normalizeTheater(rows) {
-  const name = pickTheaterName(rows);
+function getDistanceKm(left, right) {
+  const toRadian = Math.PI / 180;
+  const latDelta = (right.latitude - left.latitude) * toRadian;
+  const lngDelta = (right.longitude - left.longitude) * toRadian;
+  const haversine = Math.sin(latDelta / 2) ** 2
+    + Math.cos(left.latitude * toRadian) * Math.cos(right.latitude * toRadian) * Math.sin(lngDelta / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(haversine));
+}
+
+// 같은 극장이 도로명·지번 등 다른 주소로 따로 등록된 경우가 있어, 이름이 같고 500m 안이면 하나로 합침
+function mergeSameTheaters(theaters) {
+  const merged = [];
+  for (const theater of theaters) {
+    const same = merged.find((item) => item.title === theater.title
+      && item.latitude !== null && theater.latitude !== null
+      && getDistanceKm(item, theater) < 0.5);
+    if (same) {
+      same.screenCount += theater.screenCount;
+      same.contactPoint ||= theater.contactPoint;
+    } else {
+      merged.push(theater);
+    }
+  }
+  return merged;
+}
+
+function normalizeTheater(rows, brand) {
+  const pickedName = pickTheaterName(rows);
   const coordinates = rows.map(toLatLng).find(Boolean);
   const address = rows.find((row) => row.ROAD_NM_ADDR)?.ROAD_NM_ADDR ?? rows[0].LOTNO_ADDR ?? "";
+  // "코엑스 르 리클라이너"처럼 이름에 브랜드가 없으면 앞에 붙여 상영시간표 검색도 정확하게 하고,
+  // 지점명 없이 "롯데시네마"만 있으면 주소의 시·군·구를 붙여 구분
+  const brandedName = brand.pattern.test(pickedName) ? pickedName : `${brand.label} ${pickedName}`;
+  const name = brandedName === brand.label ? `${brand.label} ${address.split(" ")[1] ?? ""}`.trim() : brandedName;
 
   return {
     // 관리번호는 지자체(개방자치단체) 안에서만 고유해 지자체 코드와 묶어 씀
@@ -124,6 +169,7 @@ function normalizeTheater(rows) {
     latitude: coordinates?.latitude ?? null,
     longitude: coordinates?.longitude ?? null,
     contactPoint: rows.find((row) => row.TELNO)?.TELNO ?? "",
+    brand: brand.label,
     screenCount: rows.length,
     // 공공 API에는 극장별 상영 정보가 없어 네이버 상영시간표 검색으로 연결
     detailUrl: `https://search.naver.com/search.naver?query=${encodeURIComponent(`${name} 상영시간표`)}`,
@@ -158,7 +204,10 @@ export async function GET() {
       theaters.get(key).push(row);
     }
 
-    const items = [...theaters.values()].map(normalizeTheater);
+    const items = mergeSameTheaters([...theaters.values()].flatMap((theaterRows) => {
+      const brand = findTheaterBrand(theaterRows);
+      return brand ? [normalizeTheater(theaterRows, brand)] : [];
+    }));
     return NextResponse.json({ items, totalCount: items.length });
   } catch (error) {
     return NextResponse.json(
