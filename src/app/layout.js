@@ -8,7 +8,7 @@ import DateRangeDock from '@/components/common/DateRangeDock';
 const themeScript = `try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='dark'}catch(e){}`;
 
 export const metadata = {
-  title: '컬쳐맵 - 통합 문화생활 정보 서비스',
+  title: '컬처맵 - 통합 문화생활 정보 서비스',
   description: '날짜와 위치 기반 영화, 공연, 행사, 전시 통합 탐색 플랫폼',
 };
 

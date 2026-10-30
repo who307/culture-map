@@ -66,7 +66,7 @@ export default function Header() {
         <header className="sticky top-0 z-50 border-b border-line bg-paper">
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
                 {/* 로고 영역 */}
-                <Link href="/" aria-label="컬쳐맵 홈" className="inline-flex items-center rounded focus-visible:outline-offset-4">
+                <Link href="/" aria-label="컬처맵 홈" className="inline-flex items-center rounded focus-visible:outline-offset-4">
                     <svg width="170" height="38" viewBox="0 0 220 50" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <g transform="translate(2, 3)">
                             <path
@@ -86,7 +86,7 @@ export default function Header() {
                             fontWeight="800"
                             className="fill-ink font-display"
                             letterSpacing="-0.5px">
-                            컬쳐맵
+                            컬처맵
                         </text>
                         <text
                             x="54.5"
