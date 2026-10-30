@@ -2,6 +2,8 @@
 const nextConfig = {
     /* config options here */
     reactCompiler: true,
+    // next dev가 AI 에이전트용 AGENTS.md·CLAUDE.md를 자동 생성하지 않도록 끔
+    agentRules: false,
     images: {
         remotePatterns: [
             {

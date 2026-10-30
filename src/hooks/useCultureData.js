@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategoryCultures, fetchHomeCultures, fetchMapCultures } from "@/utils/api";
+import { fetchCategoryCultures, fetchHomeCultures, fetchMapCultures, fetchMovieTheaters } from "@/utils/api";
 import { useFilterStore } from "@/store/useFilterStore";
 
 export function useCultureData(category, options = {}) {
@@ -24,5 +24,14 @@ export function useCultureData(category, options = {}) {
       if (category === "movie") return data;
       return data.filter((item) => item.address?.includes(selectedRegion));
     },
+  });
+}
+
+// 영화관은 날짜와 무관한 시설 정보라 기간·지역과 상관없이 하루 한 번만 받아옴 (지역 필터는 지도 페이지에서 적용)
+export function useMovieTheaters() {
+  return useQuery({
+    queryKey: ["movie-theaters"],
+    queryFn: fetchMovieTheaters,
+    staleTime: 1000 * 60 * 60 * 24,
   });
 }

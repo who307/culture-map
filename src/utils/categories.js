@@ -12,6 +12,8 @@ export const CATEGORIES = [
     badge: "영",
     dot: "bg-cat-movie",
     bar: "border-cat-movie",
+    // 지도에는 영화 대신 영화관(행정안전부 영화상영관 데이터) 위치를 표시
+    marker: { color: "#3A3F4B", label: "영화관" },
   },
   {
     key: "concert",

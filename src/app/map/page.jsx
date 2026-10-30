@@ -1,25 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import Button from "@/components/common/Button";
 import NaverMapContainer from "@/components/map/NaverMapContainer";
 import Link from "next/link";
-import { useCultureData } from "@/hooks/useCultureData";
+import { useCultureData, useMovieTheaters } from "@/hooks/useCultureData";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
 import { useFilterStore } from "@/store/useFilterStore";
 import { REGIONS } from "@/utils/regions";
 
-export default function MapPage() {
+export default function MapPage({ searchParams }) {
+  // 영화 카드의 "영화관 지도" 링크(/map?layer=movie)로 들어오면 영화관 레이어를 켠 채로 시작
+  const { layer } = use(searchParams);
   const [mapMode, setMapMode] = useState("all");
   const selectedRegion = useFilterStore((state) => state.selectedRegion);
   const setSelectedRegion = useFilterStore((state) => state.setSelectedRegion);
   const bookmarks = useBookmarkStore((state) => state.bookmarks);
   const bookmarkItems = useBookmarkStore((state) => state.bookmarkItems);
   const { data = [], isLoading, isError, refetch } = useCultureData("all");
+  const { data: theaters = [] } = useMovieTheaters();
   const savedItems = bookmarks.map((id) => bookmarkItems[id]).filter(Boolean);
   const sourceItems = mapMode === "bookmarks"
     ? savedItems.filter((item) => item.type !== "movie")
-    : data;
+    : [...data, ...theaters];
   const mapItems = sourceItems
     .filter((item) => selectedRegion === "ALL"
       || item.address?.includes(selectedRegion)
@@ -85,7 +88,7 @@ export default function MapPage() {
                               )}
                           </div>
                       )}
-                      <NaverMapContainer items={isLoading ? [] : mapItems} />
+                      <NaverMapContainer items={isLoading ? [] : mapItems} initialCategories={layer === "movie" ? ["movie"] : []} />
                   </>
               )}
           </main>

@@ -1,8 +1,137 @@
 import { NextResponse } from "next/server";
+import proj4 from "proj4";
 
 const THEATER_API_URL = "https://apis.data.go.kr/1741000/movie_theaters/info";
+// 공공데이터포털이 numOfRows를 100으로 제한해 여러 페이지를 나눠 받음
+const PAGE_SIZE = 100;
+const CONCURRENCY = 6;
+// 인허가 데이터 좌표는 위경도가 아닌 중부원점 TM(EPSG:5174, Bessel 타원체)
+const TM_PROJECTION = "+proj=tmerc +lat_0=38 +lon_0=127.0028902777778 +k=1 +x_0=200000 +y_0=500000 +ellps=bessel +units=m +no_defs +towgs84=-115.80,474.99,674.11,1.16,-2.31,-1.63,6.43";
 
-export async function GET(request) {
+class TheaterApiError extends Error {}
+
+async function fetchPage(serviceKey, pageNo) {
+  const upstreamUrl = new URL(THEATER_API_URL);
+  upstreamUrl.search = new URLSearchParams({
+    serviceKey,
+    pageNo: String(pageNo),
+    numOfRows: String(PAGE_SIZE),
+    type: "json",
+    // 영업/정상 상태만 받음 (폐업·휴업·말소 제외)
+    "cond[SALS_STTS_CD::EQ]": "01",
+  }).toString();
+
+  const response = await fetch(upstreamUrl, { next: { revalidate: 86400 } });
+  const body = await response.text();
+  let data;
+  try {
+    data = JSON.parse(body);
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const errorCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.errMsg;
+    throw new TheaterApiError(errorCode === "SERVICE_KEY_IS_NOT_REGISTERED_ERROR"
+      ? "서비스 키가 등록되지 않았습니다. 공공데이터포털의 활용 신청 승인 상태를 확인해주세요."
+      : "공공데이터포털 영화관 API 요청에 실패했습니다.");
+  }
+  if (!data) throw new TheaterApiError("공공데이터포털에서 JSON 응답을 받지 못했습니다.");
+
+  const header = data?.response?.header;
+  if (header?.resultCode && !["00", "0"].includes(header.resultCode)) {
+    throw new TheaterApiError(header.resultMsg ?? "공공데이터포털 영화관 API 오류입니다.");
+  }
+
+  const pageBody = data?.response?.body;
+  const items = pageBody?.items?.item ?? [];
+  return {
+    totalCount: Number(pageBody?.totalCount) || 0,
+    items: Array.isArray(items) ? items : [items],
+  };
+}
+
+async function fetchAllRows(serviceKey) {
+  const firstPage = await fetchPage(serviceKey, 1);
+  const pageCount = Math.ceil(firstPage.totalCount / PAGE_SIZE);
+  const restPages = Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) => index + 2);
+  const rows = [...firstPage.items];
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (nextIndex < restPages.length) {
+      const page = await fetchPage(serviceKey, restPages[nextIndex++]);
+      rows.push(...page.items);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, restPages.length) }, worker));
+  return rows;
+}
+
+function toLatLng(row) {
+  const x = Number(row.CRD_INFO_X);
+  const y = Number(row.CRD_INFO_Y);
+  if (!row.CRD_INFO_X || !row.CRD_INFO_Y || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  const [longitude, latitude] = proj4(TM_PROJECTION, "WGS84", [x, y]);
+  return { latitude, longitude };
+}
+
+// "메가박스중앙(주) 대전중앙로지점 8관" → "메가박스 대전중앙로지점", "CGV연남 1관(4DX)" → "CGV연남"
+function cleanTheaterName(name) {
+  return String(name ?? "")
+    .replace(/롯데컬처웍스\(주\)\s*/, "")
+    .replace(/메가박스\s*중앙/, "메가박스")
+    .replace(/\(주\)|주식회사/g, " ")
+    .replace(/\(\s*(?:컴포트)?\s*제?\d+\s*(?:상영)?관\s*\)$/, "")
+    .replace(/\s*(?:컴포트|COMFORT|제)?\s*\d+\s*(?:상영)?관(?:\s*\([^)]*\))?$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// 상영관(1관, 2관…)마다 따로 등록되어 있어 건물 주소가 같은 행을 한 극장으로 묶음
+function getBuildingAddress(row) {
+  return String(row.ROAD_NM_ADDR || row.LOTNO_ADDR || "")
+    .split(",")[0]
+    .replace(/\s*\(.*$/, "")
+    .trim();
+}
+
+function pickTheaterName(rows) {
+  const counts = new Map();
+  for (const row of rows) {
+    const name = cleanTheaterName(row.BPLC_NM);
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  // 가장 많이 쓰인 이름, 같으면 짧은 이름
+  const [best] = [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].length - right[0].length);
+  return best?.[0] ?? String(rows[0].BPLC_NM ?? "").trim();
+}
+
+function normalizeTheater(rows) {
+  const name = pickTheaterName(rows);
+  const coordinates = rows.map(toLatLng).find(Boolean);
+  const address = rows.find((row) => row.ROAD_NM_ADDR)?.ROAD_NM_ADDR ?? rows[0].LOTNO_ADDR ?? "";
+
+  return {
+    id: `theater-${rows[0].MNG_NO}`,
+    // 지도에서 영화 카테고리 색·필터를 그대로 쓰기 위해 movie 타입으로 내려줌
+    type: "movie",
+    title: name,
+    locationName: name,
+    address,
+    latitude: coordinates?.latitude ?? null,
+    longitude: coordinates?.longitude ?? null,
+    contactPoint: rows.find((row) => row.TELNO)?.TELNO ?? "",
+    screenCount: rows.length,
+    // 공공 API에는 극장별 상영 정보가 없어 네이버 상영시간표 검색으로 연결
+    detailUrl: `https://search.naver.com/search.naver?query=${encodeURIComponent(`${name} 상영시간표`)}`,
+    detailLinkLabel: "상영시간표",
+    source: "행정안전부",
+  };
+}
+
+export async function GET() {
   const serviceKey = process.env.MOVIE_THEATERS_SERVICE_KEY;
   if (!serviceKey) {
     return NextResponse.json(
@@ -18,57 +147,21 @@ export async function GET(request) {
     decodedServiceKey = serviceKey;
   }
 
-  const searchParams = new URL(request.url).searchParams;
-  const pageNo = Math.max(1, Number(searchParams.get("pageNo")) || 1);
-  const numOfRows = Math.min(1000, Math.max(1, Number(searchParams.get("numOfRows")) || 1000));
-  const upstreamUrl = new URL(THEATER_API_URL);
-  upstreamUrl.search = new URLSearchParams({
-    serviceKey: decodedServiceKey,
-    pageNo: String(pageNo),
-    numOfRows: String(numOfRows),
-    type: "json",
-  }).toString();
-
   try {
-    const response = await fetch(upstreamUrl, { next: { revalidate: 86400 } });
-    const body = await response.text();
-    let data;
-    try {
-      data = JSON.parse(body);
-    } catch {
-      data = null;
+    const rows = await fetchAllRows(decodedServiceKey);
+    const theaters = new Map();
+    for (const row of rows) {
+      const key = getBuildingAddress(row);
+      if (!key) continue;
+      if (!theaters.has(key)) theaters.set(key, []);
+      theaters.get(key).push(row);
     }
 
-    if (!response.ok) {
-      const errorCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.errMsg;
-      const message = errorCode === "SERVICE_KEY_IS_NOT_REGISTERED_ERROR"
-        ? "서비스 키가 등록되지 않았습니다. 공공데이터포털의 활용 신청 승인 상태를 확인해주세요."
-        : "공공데이터포털 영화관 API 요청에 실패했습니다.";
-      return NextResponse.json(
-        { error: message, errorCode },
-        { status: 502 }
-      );
-    }
-
-    if (!data) {
-      return NextResponse.json(
-        { error: "공공데이터포털에서 JSON 응답을 받지 못했습니다." },
-        { status: 502 }
-      );
-    }
-
-    const header = data?.response?.header;
-    if (header?.resultCode && !["00", "0"].includes(header.resultCode)) {
-      return NextResponse.json(
-        { error: header.resultMsg ?? "공공데이터포털 영화관 API 오류입니다." },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json(data);
-  } catch {
+    const items = [...theaters.values()].map(normalizeTheater);
+    return NextResponse.json({ items, totalCount: items.length });
+  } catch (error) {
     return NextResponse.json(
-      { error: "공공데이터포털 영화관 API에 연결하지 못했습니다." },
+      { error: error instanceof TheaterApiError ? error.message : "공공데이터포털 영화관 API에 연결하지 못했습니다." },
       { status: 502 }
     );
   }
