@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useBookmarkStore } from '@/store/useBookmarkStore';
 import { CATEGORY_BY_KEY } from '@/utils/categories';
@@ -149,10 +150,14 @@ export default function CultureCard({ item }) {
                 <dt className="text-ink-faint">매출</dt>
                 <dd className="truncate text-ink-soft">{boxOfficeLabel} {formatKoreanUnit(item.salesAmount)}원</dd>
               </dl>
-              <div className="mt-2 text-xs">
+              {/* 공공 API에 극장별 상영 정보가 없어 상영시간표는 네이버로, 영화관 위치는 지도 영화관 레이어로 연결 */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 <ExternalLink href={`https://search.naver.com/search.naver?query=${encodeURIComponent(`${item.title} 상영시간표`)}`}>
                   상영시간표
                 </ExternalLink>
+                <Link href="/map?layer=movie" className="font-semibold text-ink-soft underline-offset-2 hover:underline">
+                  영화관 지도
+                </Link>
               </div>
             </>
           ) : (

@@ -6,7 +6,7 @@ import { MAP_CATEGORIES } from "@/utils/categories";
 import { hasCoordinates } from "@/utils/location";
 
 export const MARKER_STYLES = Object.fromEntries(
-  MAP_CATEGORIES.map(({ key, shortLabel, badge, marker }) => [key, { ...marker, badge, label: shortLabel }])
+  MAP_CATEGORIES.map(({ key, shortLabel, badge, marker }) => [key, { ...marker, badge, label: marker.label ?? shortLabel }])
 );
 
 // 이 줌보다 멀리 보면 핀 대신 작은 점으로 그려 수도권처럼 몰린 곳이 덩어리지지 않게 함

@@ -145,13 +145,8 @@ export async function fetchMapCultures(options = {}) {
     .filter((item) => hasCoordinates(item) || Boolean(item.address || item.locationName));
 }
 
-export async function fetchMovieTheaters(options = {}) {
-  const { pageNo = 1, numOfRows = 1000 } = options;
-  const params = new URLSearchParams({
-    pageNo: String(pageNo),
-    numOfRows: String(numOfRows),
-  });
-  const response = await fetch(`/api/movie-theaters?${params}`);
+export async function fetchMovieTheaters() {
+  const response = await fetch("/api/movie-theaters");
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -159,11 +154,5 @@ export async function fetchMovieTheaters(options = {}) {
   }
 
   const data = await response.json();
-  const items = data?.response?.body?.items?.item
-    ?? data?.body?.items?.item
-    ?? data?.data?.items
-    ?? data?.items
-    ?? [];
-
-  return Array.isArray(items) ? items : items ? [items] : [];
+  return data.items ?? [];
 }

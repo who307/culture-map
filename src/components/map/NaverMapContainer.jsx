@@ -7,6 +7,9 @@ import { useNaverMap } from '@/hooks/useNaverMap';
 import { useFilterStore } from '@/store/useFilterStore';
 import { hasCoordinates } from '@/utils/location';
 
+// 기본으로 꺼져 있는 영화관 필터는 맨 뒤에 둠
+const FILTER_ENTRIES = Object.entries(MARKER_STYLES).sort(([left], [right]) => (left === 'movie') - (right === 'movie'));
+
 function getGeocodeQueries(item) {
   const address = String(item.address ?? '').trim();
   const locationName = String(item.locationName ?? '').trim();
@@ -23,14 +26,14 @@ function getGeocodeQueries(item) {
   return [...queries].filter((query) => query.length >= 3);
 }
 
-export default function NaverMapContainer({ items = [] }) {
+export default function NaverMapContainer({ items = [], initialCategories = [] }) {
   const containerRef = useRef(null);
   const geocodeCacheRef = useRef(new Map());
   const { map, status } = useNaverMap(containerRef);
   const { selectedMapItem, setSelectedMapItem } = useFilterStore();
 
   // 💡 1. 복수 선택을 위해 배열([])로 상태 변경
-  const [activeCategories, setActiveCategories] = useState([]);
+  const [activeCategories, setActiveCategories] = useState(initialCategories);
   const [geocodedLocations, setGeocodedLocations] = useState({});
 
   // 지도가 로드되었을 때 확대/축소 바(zoomControl) 없애기
@@ -51,10 +54,11 @@ export default function NaverMapContainer({ items = [] }) {
     );
   };
 
-  // 💡 3. 선택된 카테고리 중 하나라도 일치하면 필터링 (배열이 비어있으면 전체 노출)
+  // 💡 3. 선택된 카테고리 중 하나라도 일치하면 필터링 (배열이 비어있으면 행사 전체 노출)
+  // 영화관은 날짜와 무관한 상시 시설이라 수가 많아 '영화관'을 직접 골랐을 때만 표시
   const filteredItems = useMemo(() => activeCategories.length > 0
     ? items.filter((item) => activeCategories.includes(item.type))
-    : items, [activeCategories, items]);
+    : items.filter((item) => item.type !== 'movie'), [activeCategories, items]);
 
   useEffect(() => {
     if (status !== 'ready') return undefined;
@@ -62,7 +66,8 @@ export default function NaverMapContainer({ items = [] }) {
     let cancelled = false;
     const groupedQueries = new Map();
 
-    for (const item of items) {
+    // 보이는 항목만 장소 검색 (꺼진 영화관 레이어까지 검색하지 않도록)
+    for (const item of filteredItems) {
       if (hasCoordinates(item)) continue;
 
       const queries = getGeocodeQueries(item);
@@ -110,7 +115,7 @@ export default function NaverMapContainer({ items = [] }) {
 
     void Promise.all(Array.from({ length: Math.min(2, queries.length) }, worker));
     return () => { cancelled = true; };
-  }, [items, status]);
+  }, [filteredItems, status]);
 
   const mapItems = useMemo(() => filteredItems.flatMap((item) => {
     if (hasCoordinates(item)) return [item];
@@ -144,21 +149,22 @@ export default function NaverMapContainer({ items = [] }) {
         aria-label="지도 마커 카테고리 필터"
         className="absolute left-3 right-16 top-3 z-10 flex w-fit flex-wrap items-center gap-1 rounded-xl border border-line-strong bg-surface p-1 text-sm shadow-sm"
       >
-        {Object.entries(MARKER_STYLES).map(([category, style]) => {
+        {FILTER_ENTRIES.map(([category, style]) => {
           // 💡 4. 현재 카테고리가 선택 배열에 포함되어 있는지 확인
           const isSelected = activeCategories.includes(category);
           const isAnySelected = activeCategories.length > 0;
+          const isShown = isAnySelected ? isSelected : category !== 'movie';
 
           return (
             <li key={category}>
-              {/* 💡 5. 선택된 카테고리는 배경으로 강조, 나머지는 흐리게 (아무것도 선택 안 했을 땐 모두 선명하게) */}
+              {/* 💡 5. 선택된 카테고리는 배경으로 강조, 나머지는 흐리게 (아무것도 선택 안 했을 땐 영화관만 흐리게) */}
               <button
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => handleCategoryClick(category)}
                 className={`inline-flex h-9 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 font-medium text-ink transition-[background-color,opacity] duration-150 ${
                   isSelected ? 'bg-sunken font-semibold' : 'hover:bg-sunken'
-                } ${isAnySelected && !isSelected ? 'opacity-55' : 'opacity-100'}`}
+                } ${isShown ? 'opacity-100' : 'opacity-55'}`}
               >
                 {/* 지도의 점 마커와 같은 모양의 색 점: 마커를 읽는 기준 */}
                 <span

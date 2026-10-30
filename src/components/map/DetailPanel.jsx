@@ -56,13 +56,15 @@ export default function DetailPanel({ item, onClose }) {
   }, [item, onClose]);
 
   if (!item) return null;
+  // 지도의 movie 타입 항목은 영화가 아니라 영화관 (일정·가격 대신 상영관 수를 보여줌)
+  const isTheater = item.type === "movie";
   const isDescriptionExpanded = expandedDescriptionId === item.id;
   const hasPrice = hasPriceInfo(item.price);
   const description = cleanDescription(item.description);
   const hasLongDescription = description.length > DESCRIPTION_LIMIT;
   const normalizedLocation = item.locationName?.replace(/[\s,]/g, "").toLowerCase();
   const normalizedAddress = item.address?.replace(/[\s,]/g, "").toLowerCase();
-  const hasDistinctAddress = item.address && normalizedAddress !== normalizedLocation;
+  const hasDistinctAddress = item.address && (isTheater || normalizedAddress !== normalizedLocation);
 
   return (
     <aside
@@ -72,7 +74,9 @@ export default function DetailPanel({ item, onClose }) {
     >
       <div className="flex shrink-0 items-start justify-between gap-3 p-4 pb-3">
         <div className="min-w-0 flex-1">
-          <p className="wrap-break-word text-xs font-semibold text-accent">{item.locationName}</p>
+          <p className="wrap-break-word text-xs font-semibold text-accent">
+            {isTheater ? `영화관 · 상영관 ${item.screenCount}개` : item.locationName}
+          </p>
           <h2 className="mt-1 wrap-break-word text-lg font-bold leading-snug text-ink">{item.title}</h2>
         </div>
         <Button type="button" variant="ghost" className="min-h-9 shrink-0 whitespace-nowrap px-2.5" onClick={onClose}>닫기</Button>
@@ -85,11 +89,13 @@ export default function DetailPanel({ item, onClose }) {
               : description}
           </p>
         )}
-        {hasDistinctAddress && <p className="mt-2 wrap-break-word text-xs text-ink-faint">{item.address}</p>}
-        <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-line pt-3 text-xs text-ink-soft tabular-nums">
-          <span>{formatDateRange(item.startDate, item.endDate)}</span>
-          {hasPrice && <span className="font-semibold text-ink">{formatPrice(item.price)}</span>}
-        </div>
+        {hasDistinctAddress && <p className={`wrap-break-word text-xs text-ink-faint ${isTheater ? "" : "mt-2"}`}>{item.address}</p>}
+        {!isTheater && (
+          <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-line pt-3 text-xs text-ink-soft tabular-nums">
+            <span>{formatDateRange(item.startDate, item.endDate)}</span>
+            {hasPrice && <span className="font-semibold text-ink">{formatPrice(item.price)}</span>}
+          </div>
+        )}
         {item.contactPoint && <p className="mt-2 wrap-break-word text-xs text-ink-faint">문의: {item.contactPoint}</p>}
         {(item.reservationUrl || item.detailUrl) && (
           <div className="mt-3 flex flex-wrap gap-3 border-t border-line pt-3 text-sm">
