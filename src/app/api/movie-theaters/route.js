@@ -114,7 +114,8 @@ function normalizeTheater(rows) {
   const address = rows.find((row) => row.ROAD_NM_ADDR)?.ROAD_NM_ADDR ?? rows[0].LOTNO_ADDR ?? "";
 
   return {
-    id: `theater-${rows[0].MNG_NO}`,
+    // 관리번호는 지자체(개방자치단체) 안에서만 고유해 지자체 코드와 묶어 씀
+    id: `theater-${rows[0].OPN_ATMY_GRP_CD}-${rows[0].MNG_NO}`,
     // 지도에서 영화 카테고리 색·필터를 그대로 쓰기 위해 movie 타입으로 내려줌
     type: "movie",
     title: name,
